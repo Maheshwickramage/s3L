@@ -1,32 +1,33 @@
 
 import React, { useState } from 'react';
-import { Box, Button, TextField, Typography, Paper } from '@mui/material';
-
+import { Box, Button, TextField, Typography, Paper, CircularProgress } from '@mui/material';
+import { login } from '../utils/auth';
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
+    
     try {
-      const res = await fetch('http://localhost:5050/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        console.log('Login response:', data);
-        // Pass must_change_password to parent
-        onLogin(data.id, data.username, data.role, data.must_change_password);
+      const result = await login(username, password);
+      
+      if (result.success) {
+        console.log('Login successful:', result.user);
+        onLogin(result.user);
       } else {
-        setError(data.error || 'Login failed');
+        setError(result.error || 'Login failed');
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError('Network error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,8 +55,15 @@ function Login({ onLogin }) {
             onChange={e => setPassword(e.target.value)}
             required
           />
-          <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>
-            Login
+          <Button 
+            type="submit" 
+            variant="contained" 
+            color="primary" 
+            fullWidth 
+            sx={{ mt: 2 }}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Login'}
           </Button>
         </form>
         {error && <Typography color="error" align="center" sx={{ mt: 2 }}>{error}</Typography>}

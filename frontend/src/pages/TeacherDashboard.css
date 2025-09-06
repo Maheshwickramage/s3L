@@ -5,8 +5,43 @@
   min-height: 100vh;
 }
 
+/* Alternative background size options - uncomment the one you prefer: */
+
+/* Option 1: Cover (fills entire container, may crop) */
+/* .teacher-dashboard {
+  background-size: cover;
+} */
+
+/* Option 2: Contain (fits entire background, may show gaps) */
+/* .teacher-dashboard {
+  background-size: contain;
+} */
+
+/* Option 3: Stretch to exact dimensions */
+/* .teacher-dashboard {
+  background-size: 100% 100%;
+} */
+
+/* Option 4: Auto (original size) */
+/* .teacher-dashboard {
+  background-size: auto;
+} */
+
+/* Option 5: Custom size */
+/* .teacher-dashboard {
+  background-size: 120% 120%;
+} */
+
+/* Option 6: Different sizes for different axes */
+/* .teacher-dashboard {
+  background-size: 100% auto;
+} */
+
 .welcome-section {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);

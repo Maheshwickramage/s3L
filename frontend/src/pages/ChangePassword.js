@@ -1,23 +1,34 @@
 import React, { useState } from 'react';
-import { Box, Button, TextField, Typography, Paper } from '@mui/material';
+import { Box, Button, TextField, Typography, Paper, CircularProgress } from '@mui/material';
+import { authenticatedFetch } from '../utils/auth';
 
 function ChangePassword({ user, onPasswordChanged }) {
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const res = await fetch('http://localhost:5050/api/auth/change-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user.username, newPassword })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      onPasswordChanged();
-    } else {
-      setError(data.error || 'Password change failed');
+    setLoading(true);
+    
+    try {
+      const res = await authenticatedFetch('http://localhost:5050/api/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ newPassword })
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        onPasswordChanged();
+      } else {
+        setError(data.error || 'Password change failed');
+      }
+    } catch (err) {
+      console.error('Password change error:', err);
+      setError('Network error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -36,8 +47,15 @@ function ChangePassword({ user, onPasswordChanged }) {
             onChange={e => setNewPassword(e.target.value)}
             required
           />
-          <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>
-            Change Password
+          <Button 
+            type="submit" 
+            variant="contained" 
+            color="primary" 
+            fullWidth 
+            sx={{ mt: 2 }}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Change Password'}
           </Button>
         </form>
         {error && <Typography color="error" align="center" sx={{ mt: 2 }}>{error}</Typography>}

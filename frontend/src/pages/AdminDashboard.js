@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Paper, List, ListItem, ListItemText, Divider } from '@mui/material';
 
 
 function AdminDashboard() {
+  const navigate = useNavigate();
   const [teachers, setTeachers] = useState([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,7 +31,14 @@ function AdminDashboard() {
   };
 
   return (
-    <Box sx={{ maxWidth: 600, margin: 'auto', padding: 2 }}>
+    <Box sx={{ maxWidth: 800, margin: 'auto', padding: 2 }}>
+      <Button onClick={() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }} variant="outlined" color="secondary" sx={{ float: 'right', mb: 2 }}>
+        Logout
+      </Button>
       <Typography variant="h4" align="center" gutterBottom>Super Admin Dashboard</Typography>
       <Paper elevation={3} sx={{ padding: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>Add Teacher</Typography>

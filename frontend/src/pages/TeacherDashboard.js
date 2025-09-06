@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Chat from './Chat';
 import './TeacherDashboard.css';
+import { authenticatedFetch } from '../utils/auth';
 import {
   Box,
   Button,
@@ -58,7 +59,7 @@ const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-function TeacherDashboard() {
+function TeacherDashboard({ user, onLogout }) {
   // State management
   const [students, setStudents] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -107,11 +108,25 @@ function TeacherDashboard() {
     setLoading(true);
     try {
       const [studentsRes, leaderboardRes, quizzesRes, resultsRes] = await Promise.all([
-        fetch('http://localhost:5050/api/teacher/students'),
-        fetch('http://localhost:5050/api/teacher/leaderboard'),
-        fetch('http://localhost:5050/api/teacher/quizzes'),
-        fetch('http://localhost:5050/api/teacher/results')
+        authenticatedFetch('http://localhost:5050/api/teacher/students'),
+        authenticatedFetch('http://localhost:5050/api/teacher/leaderboard'),
+        authenticatedFetch('http://localhost:5050/api/teacher/quizzes'),
+        authenticatedFetch('http://localhost:5050/api/teacher/results')
       ]);
+
+      // Check if any request failed
+      if (!studentsRes.ok) {
+        throw new Error(`Students API error: ${studentsRes.status}`);
+      }
+      if (!leaderboardRes.ok) {
+        throw new Error(`Leaderboard API error: ${leaderboardRes.status}`);
+      }
+      if (!quizzesRes.ok) {
+        throw new Error(`Quizzes API error: ${quizzesRes.status}`);
+      }
+      if (!resultsRes.ok) {
+        throw new Error(`Results API error: ${resultsRes.status}`);
+      }
 
       const [studentsData, leaderboardData, quizzesData, resultsData] = await Promise.all([
         studentsRes.json(),
@@ -125,7 +140,8 @@ function TeacherDashboard() {
       setQuizzes(quizzesData);
       setResults(resultsData);
     } catch (error) {
-      showSnackbar('Error loading data', 'error');
+      console.error('Error loading data:', error);
+      showSnackbar(`Error loading data: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -140,10 +156,9 @@ function TeacherDashboard() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5050/api/teacher/students', {
+      const res = await authenticatedFetch('http://localhost:5050/api/teacher/students', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...studentForm, teacher_id: 1 })
+        body: JSON.stringify({ ...studentForm, teacher_id: user.id })
       });
       
       if (res.ok) {
@@ -165,7 +180,7 @@ function TeacherDashboard() {
   const handleDeleteStudent = async (id) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5050/api/teacher/students/${id}`, {
+      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/students/${id}`, {
         method: 'DELETE'
       });
       
@@ -187,10 +202,9 @@ function TeacherDashboard() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5050/api/teacher/quizzes', {
+      const res = await authenticatedFetch('http://localhost:5050/api/teacher/quizzes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: quizForm.title, teacher_id: 1 })
+        body: JSON.stringify({ title: quizForm.title, teacher_id: user.id })
       });
       
       if (res.ok) {
@@ -225,7 +239,7 @@ function TeacherDashboard() {
   const handleDeleteQuiz = async (id) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5050/api/teacher/quizzes/${id}`, {
+      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/quizzes/${id}`, {
         method: 'DELETE'
       });
       
@@ -244,7 +258,7 @@ function TeacherDashboard() {
 
   const handleEditQuiz = async (quiz) => {
     try {
-      const res = await fetch(`http://localhost:5050/api/teacher/quizzes/${quiz.id}/full`);
+      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/quizzes/${quiz.id}/full`);
       if (res.ok) {
         const quizData = await res.json();
         setEditQuizData(quizData);
@@ -261,17 +275,15 @@ function TeacherDashboard() {
     setLoading(true);
     try {
       // Update quiz title
-      await fetch(`http://localhost:5050/api/teacher/quizzes/${editQuizData.id}`, {
+      await authenticatedFetch(`http://localhost:5050/api/teacher/quizzes/${editQuizData.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: editTitle })
       });
       
       // Update each question
       for (const q of editQuestions) {
-        await fetch(`http://localhost:5050/api/teacher/quizzes/${editQuizData.id}/questions/${q.id}`, {
+        await authenticatedFetch(`http://localhost:5050/api/teacher/quizzes/${editQuizData.id}/questions/${q.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ question_text: q.question_text, marks: q.marks, options: q.options })
         });
       }
@@ -306,9 +318,8 @@ function TeacherDashboard() {
     setLoading(true);
     try {
       const allQuestions = currentQuestion.question_text.trim() ? [...questions, currentQuestion] : questions;
-      const res = await fetch(`http://localhost:5050/api/teacher/quizzes/${newQuizId}/questions`, {
+      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/quizzes/${newQuizId}/questions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ questions: allQuestions })
       });
       
@@ -397,7 +408,7 @@ function TeacherDashboard() {
         <Toolbar>
           <SchoolIcon sx={{ mr: 2 }} />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Teacher Dashboard
+            Teacher Dashboard - Welcome, {user?.username}
           </Typography>
           <Button
             color="inherit"
@@ -407,104 +418,201 @@ function TeacherDashboard() {
           >
             Add Student
           </Button>
+          <Button
+            color="inherit"
+            onClick={onLogout}
+            sx={{ ml: 1 }}
+          >
+            Logout
+          </Button>
         </Toolbar>
       </AppBar>
 
       {/* Main Content */}
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        {/* Welcome Section */}
-        <Paper elevation={0} className="welcome-section fade-in-up" sx={{ p: 3, mb: 4, color: 'white' }}>
-          <Typography variant="h4" gutterBottom>
-            Welcome to Your Teaching Hub
-          </Typography>
-          <Typography variant="h6" sx={{ opacity: 0.9 }}>
-            Manage students, create quizzes, and track progress all in one place
-          </Typography>
-        </Paper>
+      <div className="dashboard-container">
+        <Box sx={{ py: 4, width: '100%' }}>
+          {/* Welcome Section */}
+<Paper
+  elevation={3}
+  className="welcome-section fade-in-up"
+  sx={{
+    mb: 6,
+    py: { xs: 4, sm: 6 },
+    px: { xs: 2, sm: 4 },
+    textAlign: "center",
+    background: "linear-gradient(135deg, #1976d2, #42a5f5)", // professional gradient
+    borderRadius: 3,
+    color: "white",
+  }}
+>
+  <Typography
+    variant="h3"
+    gutterBottom
+    sx={{
+      fontSize: { xs: "1.8rem", sm: "2.4rem", md: "2.8rem" },
+      fontWeight: "bold",
+      mb: 2,
+    }}
+  >
+    Welcome to <span style={{ color: "#FFD700" }}>S3 Learn</span> Teaching Hub
+  </Typography>
 
-        {/* Feature Cards Grid */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          {featureCards.map((card, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Fade in timeout={300 + index * 100}>
-                <Card
-                  className="feature-card interactive-card"
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    cursor: 'pointer'
-                  }}
-                  onClick={card.onClick}
-                >
-                  <CardContent sx={{ flexGrow: 1, textAlign: 'center', p: 3 }}>
-                    <Avatar
-                      sx={{
-                        width: 80,
-                        height: 80,
-                        mx: 'auto',
-                        mb: 2,
-                        backgroundColor: card.color,
-                        color: 'white'
-                      }}
-                    >
-                      {card.icon}
-                    </Avatar>
-                    <Typography variant="h6" gutterBottom>
-                      {card.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      {card.description}
-                    </Typography>
-                    <Chip
-                      label={`${card.stats} ${typeof card.stats === 'number' ? 'items' : ''}`}
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                    />
-                  </CardContent>
-                </Card>
-              </Fade>
-            </Grid>
-          ))}
-        </Grid>
+  <Typography
+    variant="h6"
+    sx={{
+      opacity: 0.95,
+      fontSize: { xs: "1rem", sm: "1.2rem", md: "1.3rem" },
+      fontWeight: 500,
+    }}
+  >
+    Study. Solve. Succeed.
+  </Typography>
+</Paper>
 
-        {/* Quick Stats */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={2} className="stats-card slide-in-right" sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h4" color="primary" gutterBottom>
+          {/* Feature Cards Grid */}
+          <div
+  className="feature-grid"
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", // evenly distributed
+    gap: "1.5rem", // spacing between cards
+    alignItems: "stretch", // make all items same height
+    marginBottom: "2rem",
+  }}
+>
+  {featureCards.map((card, index) => (
+    <Fade in timeout={300 + index * 100} key={index}>
+      <Card
+        className="feature-card interactive-card"
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          cursor: "pointer",
+          height: "100%", // ✅ ensures full height
+        }}
+        onClick={card.onClick}
+      >
+        <CardContent
+          sx={{
+            flexGrow: 1,
+            textAlign: "center",
+            p: { xs: 2, sm: 2.5, md: 3 },
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between", // space out content evenly
+            height: "100%",
+          }}
+        >
+          <Avatar
+            sx={{
+              width: { xs: 60, sm: 70, md: 80 },
+              height: { xs: 60, sm: 70, md: 80 },
+              mx: "auto",
+              mb: 2,
+              backgroundColor: card.color,
+              color: "white",
+            }}
+          >
+            {card.icon}
+          </Avatar>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{
+              fontSize: { xs: "1rem", sm: "1.1rem", md: "1.25rem" },
+            }}
+          >
+            {card.title}
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mb: 2,
+              fontSize: { xs: "0.8rem", sm: "0.9rem", md: "1rem" },
+              flexGrow: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center", // centers description vertically
+              textAlign: "center",
+            }}
+          >
+            {card.description}
+          </Typography>
+          <Chip
+            label={`${card.stats} ${typeof card.stats === "number" ? "items" : ""}`}
+            color="primary"
+            variant="outlined"
+            size="small"
+            sx={{
+              fontSize: { xs: "0.7rem", sm: "0.8rem", md: "0.9rem" },
+              alignSelf: "center", // centers chip
+            }}
+          />
+        </CardContent>
+      </Card>
+    </Fade>
+  ))}
+</div>
+
+
+          {/* Quick Stats */}
+          <div className="stats-grid" style={{ display: 'grid', marginBottom: '2rem' }}>
+            <Paper elevation={2} className="stats-card slide-in-right" sx={{ 
+              p: { xs: 2, sm: 2.5, md: 3 }, 
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              height: '100%'
+            }}>
+              <Typography variant="h4" color="primary" gutterBottom sx={{ fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' } }}>
                 {students.length}
               </Typography>
-              <Typography variant="h6">Total Students</Typography>
+              <Typography variant="h6" sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' } }}>Total Students</Typography>
             </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={2} className="stats-card slide-in-right" sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h4" color="secondary" gutterBottom>
+            <Paper elevation={2} className="stats-card slide-in-right" sx={{ 
+              p: { xs: 2, sm: 2.5, md: 3 }, 
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              height: '100%'
+            }}>
+              <Typography variant="h4" color="secondary" gutterBottom sx={{ fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' } }}>
                 {quizzes.length}
               </Typography>
-              <Typography variant="h6">Active Quizzes</Typography>
+              <Typography variant="h6" sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' } }}>Active Quizzes</Typography>
             </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={2} className="stats-card slide-in-right" sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main" gutterBottom>
+            <Paper elevation={2} className="stats-card slide-in-right" sx={{ 
+              p: { xs: 2, sm: 2.5, md: 3 }, 
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              height: '100%'
+            }}>
+              <Typography variant="h4" color="success.main" gutterBottom sx={{ fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' } }}>
                 {results.length}
               </Typography>
-              <Typography variant="h6">Quiz Attempts</Typography>
+              <Typography variant="h6" sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' } }}>Quiz Attempts</Typography>
             </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={2} className="stats-card slide-in-right" sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main" gutterBottom>
+            <Paper elevation={2} className="stats-card slide-in-right" sx={{ 
+              p: { xs: 2, sm: 2.5, md: 3 }, 
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              height: '100%'
+            }}>
+              <Typography variant="h4" color="warning.main" gutterBottom sx={{ fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' } }}>
                 {leaderboard.length}
               </Typography>
-              <Typography variant="h6">Leaderboard Entries</Typography>
+              <Typography variant="h6" sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' } }}>Leaderboard Entries</Typography>
             </Paper>
-          </Grid>
-        </Grid>
-      </Container>
+          </div>
+        </Box>
+      </div>
 
       {/* Add Student Modal */}
       <Dialog
