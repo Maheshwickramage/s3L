@@ -8,8 +8,8 @@ function App() {
   const [user, setUser] = useState(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
 
-  const handleLogin = (username, role, must_change_password) => {
-    setUser({ username, role });
+  const handleLogin = (id, username, role, must_change_password) => {
+    setUser({ id, username, role });
     setMustChangePassword(!!must_change_password);
   };
 
