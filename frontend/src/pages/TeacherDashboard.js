@@ -59,7 +59,7 @@ const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-function TeacherDashboard({ user, onLogout }) {
+function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
   // State management
   const [students, setStudents] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -79,7 +79,7 @@ function TeacherDashboard({ user, onLogout }) {
   const [chatModal, setChatModal] = useState(false);
 
   // Form states
-  const [studentForm, setStudentForm] = useState({ name: '', email: '', class: '' });
+  const [studentForm, setStudentForm] = useState({ name: '', email: '' });
   const [quizForm, setQuizForm] = useState({ title: '' });
   const [editQuizData, setEditQuizData] = useState(null);
   const [editTitle, setEditTitle] = useState('');
@@ -105,12 +105,14 @@ function TeacherDashboard({ user, onLogout }) {
 
   // Load data
   const loadData = async () => {
+    if (!selectedClass) return;
+    
     setLoading(true);
     try {
       const [studentsRes, leaderboardRes, quizzesRes, resultsRes] = await Promise.all([
-        authenticatedFetch('http://localhost:5050/api/teacher/students'),
+        authenticatedFetch(`http://localhost:5050/api/teacher/classes/${selectedClass.id}/students`),
         authenticatedFetch('http://localhost:5050/api/teacher/leaderboard'),
-        authenticatedFetch('http://localhost:5050/api/teacher/quizzes'),
+        authenticatedFetch(`http://localhost:5050/api/teacher/classes/${selectedClass.id}/quizzes`),
         authenticatedFetch('http://localhost:5050/api/teacher/results')
       ]);
 
@@ -149,7 +151,7 @@ function TeacherDashboard({ user, onLogout }) {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [selectedClass]);
 
   // Student management
   const handleAddStudent = async (e) => {
@@ -158,13 +160,13 @@ function TeacherDashboard({ user, onLogout }) {
     try {
       const res = await authenticatedFetch('http://localhost:5050/api/teacher/students', {
         method: 'POST',
-        body: JSON.stringify({ ...studentForm, teacher_id: user.id })
+        body: JSON.stringify({ ...studentForm, class_id: selectedClass.id, teacher_id: user.id })
       });
       
       if (res.ok) {
         const newStudent = await res.json();
         setStudents([...students, newStudent]);
-        setStudentForm({ name: '', email: '', class: '' });
+        setStudentForm({ name: '', email: '' });
         setAddStudentModal(false);
         showSnackbar('Student added successfully!');
       } else {
@@ -204,7 +206,7 @@ function TeacherDashboard({ user, onLogout }) {
     try {
       const res = await authenticatedFetch('http://localhost:5050/api/teacher/quizzes', {
         method: 'POST',
-        body: JSON.stringify({ title: quizForm.title, teacher_id: user.id })
+        body: JSON.stringify({ title: quizForm.title, class_id: selectedClass.id, teacher_id: user.id })
       });
       
       if (res.ok) {
@@ -408,8 +410,15 @@ function TeacherDashboard({ user, onLogout }) {
         <Toolbar>
           <SchoolIcon sx={{ mr: 2 }} />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Teacher Dashboard - Welcome, {user?.username}
+            {selectedClass?.name} - Teacher Dashboard - Welcome, {user?.username}
           </Typography>
+          <Button
+            color="inherit"
+            onClick={onBackToClasses}
+            sx={{ mr: 1 }}
+          >
+            Back to Classes
+          </Button>
           <Button
             color="inherit"
             startIcon={<AddIcon />}
@@ -652,15 +661,6 @@ function TeacherDashboard({ user, onLogout }) {
               required
               sx={{ mb: 2 }}
             />
-            <TextField
-              margin="dense"
-              label="Class"
-              fullWidth
-              variant="outlined"
-              value={studentForm.class}
-              onChange={(e) => setStudentForm({ ...studentForm, class: e.target.value })}
-              required
-            />
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setAddStudentModal(false)} startIcon={<CancelIcon />}>
@@ -755,7 +755,7 @@ function TeacherDashboard({ user, onLogout }) {
                 >
                   <ListItemText
                     primary={student.name}
-                    secondary={`${student.email} • Class: ${student.class}`}
+                    secondary={student.email}
                   />
                 </ListItem>
                 {index < students.length - 1 && <Divider />}
