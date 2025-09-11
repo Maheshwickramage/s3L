@@ -511,4 +511,114 @@ router.post('/results', (req, res) => {
   );
 });
 
+// Chat routes
+// Get chat messages for teacher
+router.get('/chat', (req, res) => {
+  const user = req.user;
+  db.all(`
+    SELECT c.*, s.name as student_name, s.phone as student_phone, s.email as student_email
+    FROM chat_messages c
+    JOIN students s ON c.student_id = s.id
+    WHERE c.teacher_id = ?
+    ORDER BY c.created_at ASC
+  `, [user.id], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    res.json(rows);
+  });
+});
+
+// Send chat message as teacher
+router.post('/chat', (req, res) => {
+  const { student_id, message } = req.body;
+  const user = req.user;
+  
+  if (!student_id || !message || message.trim() === '') {
+    return res.status(400).json({ error: 'Student ID and message are required' });
+  }
+  
+  db.run('INSERT INTO chat_messages (student_id, teacher_id, message, sender_type) VALUES (?, ?, ?, ?)', 
+    [student_id, user.id, message.trim(), 'teacher'], function(err) {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    res.json({ success: true, messageId: this.lastID });
+  });
+});
+
+// File management routes
+// Upload file for class
+router.post('/classes/:classId/files', (req, res) => {
+  const classId = req.params.classId;
+  const user = req.user;
+  const { filename, original_name, file_path, file_size, file_type, description } = req.body;
+  
+  // Check if teacher owns this class
+  if (user.role === 'teacher') {
+    db.get('SELECT teacher_id FROM classes WHERE id = ?', [classId], (err, row) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      if (!row) return res.status(404).json({ error: 'Class not found' });
+      if (row.teacher_id !== user.id) return res.status(403).json({ error: 'Access denied' });
+      
+      db.run('INSERT INTO class_files (class_id, teacher_id, filename, original_name, file_path, file_size, file_type, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
+        [classId, user.id, filename, original_name, file_path, file_size, file_type, description], function(err2) {
+        if (err2) return res.status(500).json({ error: 'Database error' });
+        res.json({ success: true, fileId: this.lastID });
+      });
+    });
+  } else {
+    db.run('INSERT INTO class_files (class_id, teacher_id, filename, original_name, file_path, file_size, file_type, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
+      [classId, user.id, filename, original_name, file_path, file_size, file_type, description], function(err) {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      res.json({ success: true, fileId: this.lastID });
+    });
+  }
+});
+
+// Get files for class
+router.get('/classes/:classId/files', (req, res) => {
+  const classId = req.params.classId;
+  const user = req.user;
+  
+  // Check if teacher owns this class
+  if (user.role === 'teacher') {
+    db.get('SELECT teacher_id FROM classes WHERE id = ?', [classId], (err, row) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      if (!row) return res.status(404).json({ error: 'Class not found' });
+      if (row.teacher_id !== user.id) return res.status(403).json({ error: 'Access denied' });
+      
+      db.all('SELECT * FROM class_files WHERE class_id = ? ORDER BY created_at DESC', [classId], (err2, rows) => {
+        if (err2) return res.status(500).json({ error: 'Database error' });
+        res.json(rows);
+      });
+    });
+  } else {
+    db.all('SELECT * FROM class_files WHERE class_id = ? ORDER BY created_at DESC', [classId], (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      res.json(rows);
+    });
+  }
+});
+
+// Delete file
+router.delete('/files/:fileId', (req, res) => {
+  const fileId = req.params.fileId;
+  const user = req.user;
+  
+  if (user.role === 'teacher') {
+    db.get('SELECT teacher_id FROM class_files WHERE id = ?', [fileId], (err, row) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      if (!row) return res.status(404).json({ error: 'File not found' });
+      if (row.teacher_id !== user.id) return res.status(403).json({ error: 'Access denied' });
+      
+      db.run('DELETE FROM class_files WHERE id = ?', [fileId], function(err2) {
+        if (err2) return res.status(500).json({ error: 'Database error' });
+        res.json({ success: true });
+      });
+    });
+  } else {
+    db.run('DELETE FROM class_files WHERE id = ?', [fileId], function(err) {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      res.json({ success: true });
+    });
+  }
+});
+
 module.exports = router;

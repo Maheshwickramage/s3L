@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import StudentDashboard from './pages/StudentDashboard';
 import ChangePassword from './pages/ChangePassword';
 import ClassManagement from './pages/ClassManagement';
 import TeacherDashboard from './pages/TeacherDashboard';
@@ -119,7 +120,7 @@ function App() {
         <Route path="/changePassword" element={mustChangePassword && user ? <ChangePassword user={user} onPasswordChanged={handlePasswordChanged} /> : <Navigate to="/login" />} />
         <Route path="/classManagement" element={user && user.role === 'teacher' ? <ClassManagement user={user} onLogout={handleLogout} onClassSelect={handleClassSelect} /> : <Navigate to="/login" />} />
         <Route path="/teacherDashboard" element={user && user.role === 'teacher' && selectedClass ? <TeacherDashboard user={user} onLogout={handleLogout} selectedClass={selectedClass} onBackToClasses={handleBackToClasses} /> : <Navigate to="/classManagement" />} />
-        <Route path="/studentDashboard" element={user && user.role === 'student' ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
+        <Route path="/studentDashboard" element={user && user.role === 'student' ? <StudentDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
         <Route path="/adminDashboard" element={user && user.role === 'admin' ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={user ? (user.role === 'teacher' ? '/classManagement' : user.role === 'student' ? '/studentDashboard' : '/adminDashboard') : '/login'} />} />
       </Routes>

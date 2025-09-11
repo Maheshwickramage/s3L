@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import Chat from './Chat';
 import './TeacherDashboard.css';
 import { authenticatedFetch } from '../utils/auth';
 import {
@@ -34,7 +33,9 @@ import {
   Backdrop,
   CircularProgress,
   Alert,
-  Snackbar
+  Snackbar,
+  MenuItem,
+  CardActions
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -48,7 +49,11 @@ import {
   TrendingUp as TrendingUpIcon,
   Close as CloseIcon,
   Save as SaveIcon,
-  Cancel as CancelIcon
+  Cancel as CancelIcon,
+  AttachFile as AttachFileIcon,
+  Send as SendIcon,
+  Upload as UploadIcon,
+  Download as DownloadIcon
 } from '@mui/icons-material';
 
 // Transition component for modals
@@ -74,6 +79,13 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
   const [viewLeaderboardModal, setViewLeaderboardModal] = useState(false);
   const [viewResultsModal, setViewResultsModal] = useState(false);
   const [chatModal, setChatModal] = useState(false);
+  const [filesModal, setFilesModal] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [fileUploadModal, setFileUploadModal] = useState(false);
+  const [fileForm, setFileForm] = useState({ description: '' });
 
   // Form states
   const [studentForm, setStudentForm] = useState({ name: '', email: '', phone: '' });
@@ -106,11 +118,13 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
     
     setLoading(true);
     try {
-      const [studentsRes, leaderboardRes, quizzesRes, resultsRes] = await Promise.all([
+      const [studentsRes, leaderboardRes, quizzesRes, resultsRes, chatRes, filesRes] = await Promise.all([
         authenticatedFetch(`http://localhost:5050/api/teacher/classes/${selectedClass.id}/students`),
         authenticatedFetch('http://localhost:5050/api/teacher/leaderboard'),
         authenticatedFetch(`http://localhost:5050/api/teacher/classes/${selectedClass.id}/quizzes`),
-        authenticatedFetch('http://localhost:5050/api/teacher/results')
+        authenticatedFetch('http://localhost:5050/api/teacher/results'),
+        authenticatedFetch('http://localhost:5050/api/teacher/chat'),
+        authenticatedFetch(`http://localhost:5050/api/teacher/classes/${selectedClass.id}/files`)
       ]);
 
       // Check if any request failed
@@ -127,17 +141,21 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
         throw new Error(`Results API error: ${resultsRes.status}`);
       }
 
-      const [studentsData, leaderboardData, quizzesData, resultsData] = await Promise.all([
+      const [studentsData, leaderboardData, quizzesData, resultsData, chatData, filesData] = await Promise.all([
         studentsRes.json(),
         leaderboardRes.json(),
         quizzesRes.json(),
-        resultsRes.json()
+        resultsRes.json(),
+        chatRes.json(),
+        filesRes.json()
       ]);
 
       setStudents(studentsData);
       setLeaderboard(leaderboardData);
       setQuizzes(quizzesData);
       setResults(resultsData);
+      setChatMessages(chatData);
+      setFiles(filesData);
     } catch (error) {
       console.error('Error loading data:', error);
       showSnackbar(`Error loading data: ${error.message}`, 'error');
@@ -348,6 +366,79 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
     }
   };
 
+  // Chat functions
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedStudent) return;
+    
+    try {
+      const res = await authenticatedFetch('http://localhost:5050/api/teacher/chat', {
+        method: 'POST',
+        body: JSON.stringify({ student_id: selectedStudent.id, message: newMessage.trim() })
+      });
+      
+      if (res.ok) {
+        setNewMessage('');
+        loadData(); // Refresh chat messages
+        showSnackbar('Message sent successfully!');
+      } else {
+        showSnackbar('Failed to send message', 'error');
+      }
+    } catch (error) {
+      showSnackbar('Error sending message', 'error');
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // In a real application, you would upload the file to a server
+    // For now, we'll simulate the upload
+    const fileData = {
+      filename: `file_${Date.now()}_${file.name}`,
+      original_name: file.name,
+      file_path: `/uploads/${file.name}`,
+      file_size: file.size,
+      file_type: file.type,
+      description: fileForm.description
+    };
+    
+    try {
+      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/classes/${selectedClass.id}/files`, {
+        method: 'POST',
+        body: JSON.stringify(fileData)
+      });
+      
+      if (res.ok) {
+        setFileForm({ description: '' });
+        setFileUploadModal(false);
+        loadData(); // Refresh files
+        showSnackbar('File uploaded successfully!');
+      } else {
+        showSnackbar('Failed to upload file', 'error');
+      }
+    } catch (error) {
+      showSnackbar('Error uploading file', 'error');
+    }
+  };
+
+  const handleDeleteFile = async (fileId) => {
+    try {
+      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/files/${fileId}`, {
+        method: 'DELETE'
+      });
+      
+      if (res.ok) {
+        loadData(); // Refresh files
+        showSnackbar('File deleted successfully!');
+      } else {
+        showSnackbar('Failed to delete file', 'error');
+      }
+    } catch (error) {
+      showSnackbar('Error deleting file', 'error');
+    }
+  };
+
   // Feature cards data
   const featureCards = [
     {
@@ -396,7 +487,15 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
       icon: <ChatIcon sx={{ fontSize: 40 }} />,
       color: '#455a64',
       onClick: () => setChatModal(true),
-      stats: 'Live'
+      stats: chatMessages.length
+    },
+    {
+      title: 'Class Files',
+      description: 'Share files with students',
+      icon: <AttachFileIcon sx={{ fontSize: 40 }} />,
+      color: '#e17055',
+      onClick: () => setFilesModal(true),
+      stats: files.length
     }
   ];
 
@@ -933,16 +1032,185 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
           <Box display="flex" alignItems="center" justifyContent="space-between">
             <Box display="flex" alignItems="center">
               <ChatIcon sx={{ mr: 1 }} />
-              Chat
+              Chat with Students
             </Box>
             <IconButton onClick={() => setChatModal(false)}>
               <CloseIcon />
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
-          <Chat user={{ username: 'teacher1' }} />
+        <DialogContent>
+          <Box sx={{ height: 400, overflowY: 'auto', mb: 2, border: '1px solid #ddd', borderRadius: 2, p: 2 }}>
+            {chatMessages.map((msg, idx) => (
+              <Box key={idx} sx={{ mb: 2, display: 'flex', justifyContent: msg.sender_type === 'teacher' ? 'flex-end' : 'flex-start' }}>
+                <Card sx={{ 
+                  maxWidth: '70%', 
+                  bgcolor: msg.sender_type === 'teacher' ? '#1976d2' : '#f1f2f6',
+                  color: msg.sender_type === 'teacher' ? 'white' : 'black'
+                }}>
+                  <CardContent sx={{ p: 2 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                      {msg.sender_type === 'teacher' ? 'You' : msg.student_name}
+                    </Typography>
+                    <Typography variant="body1">{msg.message}</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                      {new Date(msg.created_at).toLocaleString()}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+            ))}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <TextField
+              select
+              label="Select Student"
+              value={selectedStudent?.id || ''}
+              onChange={(e) => {
+                const student = students.find(s => s.id === parseInt(e.target.value));
+                setSelectedStudent(student);
+              }}
+              sx={{ minWidth: 200 }}
+            >
+              {students.map((student) => (
+                <MenuItem key={student.id} value={student.id}>
+                  {student.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <TextField
+              fullWidth
+              placeholder="Type your message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            />
+            <IconButton color="primary" onClick={handleSendMessage} disabled={!newMessage.trim() || !selectedStudent}>
+              <SendIcon />
+            </IconButton>
+          </Box>
         </DialogContent>
+      </Dialog>
+
+      {/* Files Modal */}
+      <Dialog
+        open={filesModal}
+        onClose={() => setFilesModal(false)}
+        TransitionComponent={Transition}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box display="flex" alignItems="center">
+              <AttachFileIcon sx={{ mr: 1 }} />
+              Class Files
+            </Box>
+            <Box>
+              <Button
+                variant="contained"
+                startIcon={<UploadIcon />}
+                onClick={() => setFileUploadModal(true)}
+                sx={{ mr: 1 }}
+              >
+                Upload File
+              </Button>
+              <IconButton onClick={() => setFilesModal(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
+            {files.map((file) => (
+              <Card key={file.id}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Avatar sx={{ bgcolor: '#e17055', mr: 2 }}>
+                      <AttachFileIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h6" component="div" noWrap>
+                        {file.original_name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {(file.file_size / 1024).toFixed(1)} KB
+                      </Typography>
+                    </Box>
+                  </Box>
+                  {file.description && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {file.description}
+                    </Typography>
+                  )}
+                  <Typography variant="caption" color="text.secondary">
+                    Uploaded: {new Date(file.created_at).toLocaleDateString()}
+                  </Typography>
+                </CardContent>
+                <CardActions>
+                  <Button size="small" startIcon={<DownloadIcon />}>
+                    Download
+                  </Button>
+                  <Button size="small" color="error" onClick={() => handleDeleteFile(file.id)}>
+                    Delete
+                  </Button>
+                </CardActions>
+              </Card>
+            ))}
+            {files.length === 0 && (
+              <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4, gridColumn: '1 / -1' }}>
+                No files uploaded yet.
+              </Typography>
+            )}
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      {/* File Upload Modal */}
+      <Dialog
+        open={fileUploadModal}
+        onClose={() => setFileUploadModal(false)}
+        TransitionComponent={Transition}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center">
+            <UploadIcon sx={{ mr: 1 }} />
+            Upload File
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            margin="dense"
+            label="File Description (Optional)"
+            fullWidth
+            variant="outlined"
+            multiline
+            rows={3}
+            value={fileForm.description}
+            onChange={(e) => setFileForm({ ...fileForm, description: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <input
+            accept="*/*"
+            style={{ display: 'none' }}
+            id="file-upload"
+            type="file"
+            onChange={handleFileUpload}
+          />
+          <label htmlFor="file-upload">
+            <Button variant="outlined" component="span" startIcon={<UploadIcon />} fullWidth>
+              Choose File
+            </Button>
+          </label>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFileUploadModal(false)}>Cancel</Button>
+        </DialogActions>
       </Dialog>
 
       {/* Question Modal */}

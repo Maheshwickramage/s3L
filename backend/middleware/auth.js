@@ -43,22 +43,31 @@ const authenticateToken = (req, res, next) => {
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
 
-  // Verify user still exists in database
-  db.get(
-    'SELECT id, username, role FROM users WHERE id = ? AND username = ?',
-    [decoded.id, decoded.username],
-    (err, user) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (!user) {
-        return res.status(403).json({ error: 'User not found' });
-      }
-      
-      req.user = user;
-      next();
+  // Verify user still exists in database and get additional info for students
+  let query = 'SELECT id, username, role FROM users WHERE id = ? AND username = ?';
+  let params = [decoded.id, decoded.username];
+  
+  // If it's a student, also get student info
+  if (decoded.role === 'student') {
+    query = `
+      SELECT u.id, u.username, u.role, s.class_id, s.name as student_name, s.email as student_email, s.phone as student_phone
+      FROM users u 
+      LEFT JOIN students s ON u.username = s.phone OR u.username = s.email
+      WHERE u.id = ? AND u.username = ?
+    `;
+  }
+  
+  db.get(query, params, (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
     }
-  );
+    if (!user) {
+      return res.status(403).json({ error: 'User not found' });
+    }
+    
+    req.user = user;
+    next();
+  });
 };
 
 // Role-based authorization middleware
