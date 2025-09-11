@@ -49,18 +49,32 @@ function App() {
   const handleLogin = (userData) => {
     setUser(userData);
     setMustChangePassword(!!userData.must_change_password);
-    // Redirect to dashboard based on role
-    if (userData.role === 'teacher') {
-      navigate('/classManagement');
-    } else if (userData.role === 'student') {
-      navigate('/studentDashboard');
-    } else if (userData.role === 'admin') {
-      navigate('/adminDashboard');
+    
+    // If user must change password, redirect to change password page
+    if (userData.must_change_password) {
+      navigate('/changePassword');
+    } else {
+      // Redirect to dashboard based on role
+      if (userData.role === 'teacher') {
+        navigate('/classManagement');
+      } else if (userData.role === 'student') {
+        navigate('/studentDashboard');
+      } else if (userData.role === 'admin') {
+        navigate('/adminDashboard');
+      }
     }
   };
 
   const handlePasswordChanged = () => {
     setMustChangePassword(false);
+    // Redirect to appropriate dashboard after password change
+    if (user.role === 'teacher') {
+      navigate('/classManagement');
+    } else if (user.role === 'student') {
+      navigate('/studentDashboard');
+    } else if (user.role === 'admin') {
+      navigate('/adminDashboard');
+    }
   };
 
   const handleLogout = () => {

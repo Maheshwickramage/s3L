@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { authenticatedFetch } from '../utils/auth';
 import {
   Box,
@@ -6,12 +6,6 @@ import {
   TextField,
   Typography,
   Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Divider,
   Grid,
   Card,
   CardContent,
@@ -28,7 +22,8 @@ import {
   Alert,
   Snackbar,
   Chip,
-  Avatar
+  Avatar,
+  IconButton
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -54,7 +49,7 @@ function ClassManagement({ user, onLogout, onClassSelect }) {
     setSnackbar({ open: true, message, severity });
   };
 
-  const loadClasses = async () => {
+  const loadClasses = useCallback(async () => {
     setLoading(true);
     try {
       const res = await authenticatedFetch('http://localhost:5050/api/teacher/classes');
@@ -69,11 +64,11 @@ function ClassManagement({ user, onLogout, onClassSelect }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadClasses();
-  }, []);
+  }, [loadClasses]);
 
   const handleCreateClass = async (e) => {
     e.preventDefault();

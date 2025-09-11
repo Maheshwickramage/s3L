@@ -222,16 +222,16 @@ router.get('/quizzes', (req, res) => {
 // Add a student
 router.post('/students', (req, res) => {
   console.log(req.body);
-  const { name, email, class_id, teacher_id } = req.body;
+  const { name, email, phone, class_id, teacher_id } = req.body;
   // Default password for new student
   const defaultPassword = 'changeme123';
-  db.run('INSERT INTO students (name, email, class_id, teacher_id) VALUES (?, ?, ?, ?)', [name, email, class_id, teacher_id], function(err) {
+  db.run('INSERT INTO students (name, email, phone, class_id, teacher_id) VALUES (?, ?, ?, ?, ?)', [name, email, phone, class_id, teacher_id], function(err) {
     if (err) return res.status(500).json({ error: 'Database error', details: err.message });
     const studentId = this.lastID;
-    // Also create a user entry for login, using studentId as username
-    db.run('INSERT INTO users (username, password, role, must_change_password) VALUES (?, ?, ?, ?)', [studentId, defaultPassword, 'student', 1], function(err2) {
+    // Also create a user entry for login, using phone as username
+    db.run('INSERT INTO users (username, password, role, must_change_password) VALUES (?, ?, ?, ?)', [phone, defaultPassword, 'student', 1], function(err2) {
       if (err2) return res.status(500).json({ error: 'Database error (user creation)', details: err2.message });
-      res.json({ id: studentId, name, email, class_id, teacher_id, defaultPassword });
+      res.json({ id: studentId, name, email, phone, class_id, teacher_id, defaultPassword });
     });
   });
 });
@@ -444,22 +444,54 @@ router.put('/quizzes/:quizId/questions/:questionId', (req, res) => {
   });
 });
 
-// Get quiz results with student names
+// Get quiz results with student names and class information
 router.get('/results', (req, res) => {
-  db.all(`
-    SELECT 
-      l.id,
-      s.name as student_name,
-      q.title as quiz_name,
-      l.score
-    FROM leaderboard l
-    JOIN students s ON l.student_id = s.id
-    JOIN quizzes q ON l.quiz_id = q.id
-    ORDER BY l.score DESC
-  `, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    res.json(rows);
-  });
+  const user = req.user;
+  
+  if (user.role === 'teacher') {
+    // Get results for quizzes created by this teacher
+    db.all(`
+      SELECT 
+        l.id,
+        s.name as student_name,
+        s.phone as student_phone,
+        s.email as student_email,
+        q.title as quiz_name,
+        c.name as class_name,
+        l.score,
+        l.created_at as submitted_at
+      FROM leaderboard l
+      JOIN students s ON l.student_id = s.id
+      JOIN quizzes q ON l.quiz_id = q.id
+      JOIN classes c ON s.class_id = c.id
+      WHERE q.teacher_id = ?
+      ORDER BY l.created_at DESC
+    `, [user.id], (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      res.json(rows);
+    });
+  } else {
+    // Admin can see all results
+    db.all(`
+      SELECT 
+        l.id,
+        s.name as student_name,
+        s.phone as student_phone,
+        s.email as student_email,
+        q.title as quiz_name,
+        c.name as class_name,
+        l.score,
+        l.created_at as submitted_at
+      FROM leaderboard l
+      JOIN students s ON l.student_id = s.id
+      JOIN quizzes q ON l.quiz_id = q.id
+      JOIN classes c ON s.class_id = c.id
+      ORDER BY l.created_at DESC
+    `, [], (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      res.json(rows);
+    });
+  }
 });
 
 // Save student quiz result

@@ -16,8 +16,22 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    // Get user from database
-    db.get('SELECT * FROM users WHERE username = ?', [username], async (err, user) => {
+    // Get user from database - for students, check both phone and email
+    let query = 'SELECT * FROM users WHERE username = ?';
+    let params = [username];
+    
+    // If it looks like an email or phone, also check students table
+    if (username.includes('@') || /^\d+$/.test(username)) {
+      query = `
+        SELECT u.*, s.name as student_name, s.email as student_email, s.phone as student_phone, s.class_id
+        FROM users u 
+        LEFT JOIN students s ON u.username = s.phone OR u.username = s.email
+        WHERE u.username = ? OR s.phone = ? OR s.email = ?
+      `;
+      params = [username, username, username];
+    }
+    
+    db.get(query, params, async (err, user) => {
       if (err) {
         console.error('DB error:', err);
         return res.status(500).json({ error: 'Database error' });
@@ -46,7 +60,11 @@ router.post('/login', async (req, res) => {
           id: user.id,
           username: user.username,
           role: user.role,
-          must_change_password: user.must_change_password
+          must_change_password: user.must_change_password,
+          student_name: user.student_name,
+          student_email: user.student_email,
+          student_phone: user.student_phone,
+          class_id: user.class_id
         }
       });
     });

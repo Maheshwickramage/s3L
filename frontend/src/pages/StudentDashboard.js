@@ -1,13 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
 import Chat from './Chat';
-import { Box, Button, TextField, Typography, Paper, List, ListItem, ListItemText, Divider, Select, MenuItem, Radio, RadioGroup, FormControlLabel } from '@mui/material';
+import { Box, Button, Typography, Paper, List, ListItem, ListItemText, Divider, Radio, RadioGroup, FormControlLabel } from '@mui/material';
 
 function StudentDashboard({ user }) {
   const [quizzes, setQuizzes] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [selectedQuiz, setSelectedQuiz] = useState('');
-  const [score, setScore] = useState('');
   const [quizData, setQuizData] = useState(null);
   const [started, setStarted] = useState(false);
   const [answers, setAnswers] = useState({});
@@ -15,33 +14,21 @@ function StudentDashboard({ user }) {
   const [result, setResult] = useState(null);
 
   useEffect(() => {
-    // Students should only see quizzes from their assigned teacher
-    fetch('http://localhost:5050/api/teacher/student-quizzes', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => setQuizzes(Array.isArray(data) ? data : []));
+    // Students should only see quizzes from their assigned class
+    if (user.class_id) {
+      fetch(`http://localhost:5050/api/teacher/classes/${user.class_id}/quizzes`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+        .then(res => res.json())
+        .then(data => setQuizzes(Array.isArray(data) ? data : []));
+    }
     fetch('http://localhost:5050/api/teacher/leaderboard')
       .then(res => res.json())
       .then(data => setLeaderboard(Array.isArray(data) ? data : []));
-  }, []);
+  }, [user.class_id]);
 
-  const handleSubmitScore = async (e) => {
-    e.preventDefault();
-    // For demo, student_id is hardcoded as 1
-    const res = await fetch('http://localhost:5050/api/teacher/leaderboard', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ student_id: 1, quiz_id: selectedQuiz, score: parseInt(score) })
-    });
-    if (res.ok) {
-      setScore('');
-      setSelectedQuiz('');
-      // Optionally refresh leaderboard
-    }
-  };
 
   const handleStartQuiz = async () => {
     const res = await fetch(`http://localhost:5050/api/teacher/quizzes/${selectedQuiz}/full`);

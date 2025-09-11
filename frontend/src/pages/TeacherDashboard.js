@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Chat from './Chat';
 import './TeacherDashboard.css';
 import { authenticatedFetch } from '../utils/auth';
@@ -19,10 +19,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Grid,
   Card,
   CardContent,
-  CardActions,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -31,7 +29,6 @@ import {
   Avatar,
   AppBar,
   Toolbar,
-  Container,
   Fade,
   Slide,
   Backdrop,
@@ -79,7 +76,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
   const [chatModal, setChatModal] = useState(false);
 
   // Form states
-  const [studentForm, setStudentForm] = useState({ name: '', email: '' });
+  const [studentForm, setStudentForm] = useState({ name: '', email: '', phone: '' });
   const [quizForm, setQuizForm] = useState({ title: '' });
   const [editQuizData, setEditQuizData] = useState(null);
   const [editTitle, setEditTitle] = useState('');
@@ -104,7 +101,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
   };
 
   // Load data
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!selectedClass) return;
     
     setLoading(true);
@@ -147,11 +144,11 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedClass]);
 
   useEffect(() => {
     loadData();
-  }, [selectedClass]);
+  }, [selectedClass, loadData]);
 
   // Student management
   const handleAddStudent = async (e) => {
@@ -166,7 +163,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
       if (res.ok) {
         const newStudent = await res.json();
         setStudents([...students, newStudent]);
-        setStudentForm({ name: '', email: '' });
+        setStudentForm({ name: '', email: '', phone: '' });
         setAddStudentModal(false);
         showSnackbar('Student added successfully!');
       } else {
@@ -652,12 +649,21 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
             />
             <TextField
               margin="dense"
-              label="Email"
+              label="Email (Optional)"
               type="email"
               fullWidth
               variant="outlined"
               value={studentForm.email}
               onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              margin="dense"
+              label="Phone Number"
+              fullWidth
+              variant="outlined"
+              value={studentForm.phone}
+              onChange={(e) => setStudentForm({ ...studentForm, phone: e.target.value })}
               required
               sx={{ mb: 2 }}
             />
@@ -755,7 +761,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
                 >
                   <ListItemText
                     primary={student.name}
-                    secondary={student.email}
+                    secondary={`${student.phone}${student.email ? ` • ${student.email}` : ''}`}
                   />
                 </ListItem>
                 {index < students.length - 1 && <Divider />}
@@ -886,16 +892,24 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
               <TableHead>
                 <TableRow>
                   <TableCell>Student Name</TableCell>
+                  <TableCell>Phone</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Class</TableCell>
                   <TableCell>Quiz Name</TableCell>
                   <TableCell>Score</TableCell>
+                  <TableCell>Submitted At</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {results.map((result) => (
                   <TableRow key={result.id}>
                     <TableCell>{result.student_name}</TableCell>
+                    <TableCell>{result.student_phone}</TableCell>
+                    <TableCell>{result.student_email || 'N/A'}</TableCell>
+                    <TableCell>{result.class_name}</TableCell>
                     <TableCell>{result.quiz_name}</TableCell>
                     <TableCell>{result.score}</TableCell>
+                    <TableCell>{new Date(result.submitted_at).toLocaleString()}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
