@@ -9,129 +9,6 @@ const db = new sqlite3.Database('./database/s3learn.db');
 router.use(authenticateToken);
 router.use(authorizeRole(['teacher', 'admin']));
 
-// Class management routes
-// Get all classes for the logged-in teacher
-router.get('/classes', (req, res) => {
-  console.log("get classes");
-  const user = req.user;
-  if (user.role === 'teacher') {
-    db.all(`
-      SELECT c.*, 
-             COUNT(DISTINCT s.id) as student_count,
-             COUNT(DISTINCT q.id) as quiz_count
-      FROM classes c
-      LEFT JOIN students s ON c.id = s.class_id
-      LEFT JOIN quizzes q ON c.id = q.class_id
-      WHERE c.teacher_id = ?
-      GROUP BY c.id
-      ORDER BY c.created_at DESC
-    `, [user.id], (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      res.json(rows);
-    });
-  } else {
-    db.all(`
-      SELECT c.*, 
-             COUNT(DISTINCT s.id) as student_count,
-             COUNT(DISTINCT q.id) as quiz_count
-      FROM classes c
-      LEFT JOIN students s ON c.id = s.class_id
-      LEFT JOIN quizzes q ON c.id = q.class_id
-      GROUP BY c.id
-      ORDER BY c.created_at DESC
-    `, [], (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      res.json(rows);
-    });
-  }
-});
-
-// Create a new class
-router.post('/classes', (req, res) => {
-  const { name, description, teacher_id } = req.body;
-  db.run('INSERT INTO classes (name, description, teacher_id) VALUES (?, ?, ?)', 
-    [name, description, teacher_id], function(err) {
-    if (err) return res.status(500).json({ error: 'Database error', details: err.message });
-    res.json({ 
-      id: this.lastID, 
-      name, 
-      description, 
-      teacher_id,
-      created_at: new Date().toISOString()
-    });
-  });
-});
-
-// Update a class
-router.put('/classes/:id', (req, res) => {
-  const { name, description } = req.body;
-  const classId = req.params.id;
-  const user = req.user;
-  
-  // Check if teacher owns this class
-  if (user.role === 'teacher') {
-    db.get('SELECT teacher_id FROM classes WHERE id = ?', [classId], (err, row) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      if (!row) return res.status(404).json({ error: 'Class not found' });
-      if (row.teacher_id !== user.id) return res.status(403).json({ error: 'Access denied' });
-      
-      db.run('UPDATE classes SET name = ?, description = ? WHERE id = ?', 
-        [name, description, classId], function(err2) {
-        if (err2) return res.status(500).json({ error: 'Database error' });
-        if (this.changes === 0) return res.status(404).json({ error: 'Class not found' });
-        res.json({ success: true, id: classId, name, description });
-      });
-    });
-  } else {
-    db.run('UPDATE classes SET name = ?, description = ? WHERE id = ?', 
-      [name, description, classId], function(err) {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      if (this.changes === 0) return res.status(404).json({ error: 'Class not found' });
-      res.json({ success: true, id: classId, name, description });
-    });
-  }
-});
-
-// Delete a class
-router.delete('/classes/:id', (req, res) => {
-  const classId = req.params.id;
-  const user = req.user;
-  
-  // Check if teacher owns this class
-  if (user.role === 'teacher') {
-    db.get('SELECT teacher_id FROM classes WHERE id = ?', [classId], (err, row) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      if (!row) return res.status(404).json({ error: 'Class not found' });
-      if (row.teacher_id !== user.id) return res.status(403).json({ error: 'Access denied' });
-      
-      // Delete related data first
-      db.serialize(() => {
-        // Delete students in this class
-        db.run('DELETE FROM students WHERE class_id = ?', [classId]);
-        // Delete quizzes in this class
-        db.run('DELETE FROM quizzes WHERE class_id = ?', [classId]);
-        // Delete the class
-        db.run('DELETE FROM classes WHERE id = ?', [classId], function(err2) {
-          if (err2) return res.status(500).json({ error: 'Database error' });
-          if (this.changes === 0) return res.status(404).json({ error: 'Class not found' });
-          res.json({ success: true });
-        });
-      });
-    });
-  } else {
-    // Admin can delete any class
-    db.serialize(() => {
-      db.run('DELETE FROM students WHERE class_id = ?', [classId]);
-      db.run('DELETE FROM quizzes WHERE class_id = ?', [classId]);
-      db.run('DELETE FROM classes WHERE id = ?', [classId], function(err) {
-        if (err) return res.status(500).json({ error: 'Database error' });
-        if (this.changes === 0) return res.status(404).json({ error: 'Class not found' });
-        res.json({ success: true });
-      });
-    });
-  }
-});
-
 
 
 
@@ -222,16 +99,16 @@ router.get('/quizzes', (req, res) => {
 // Add a student
 router.post('/students', (req, res) => {
   console.log(req.body);
-  const { name, email, class_id, teacher_id } = req.body;
+  const { name, email, class: studentClass, teacher_id } = req.body;
   // Default password for new student
   const defaultPassword = 'changeme123';
-  db.run('INSERT INTO students (name, email, class_id, teacher_id) VALUES (?, ?, ?, ?)', [name, email, class_id, teacher_id], function(err) {
+  db.run('INSERT INTO students (name, email, class, teacher_id) VALUES (?, ?, ?, ?)', [name, email, studentClass, teacher_id], function(err) {
     if (err) return res.status(500).json({ error: 'Database error', details: err.message });
     const studentId = this.lastID;
     // Also create a user entry for login, using studentId as username
     db.run('INSERT INTO users (username, password, role, must_change_password) VALUES (?, ?, ?, ?)', [studentId, defaultPassword, 'student', 1], function(err2) {
       if (err2) return res.status(500).json({ error: 'Database error (user creation)', details: err2.message });
-      res.json({ id: studentId, name, email, class_id, teacher_id, defaultPassword });
+      res.json({ id: studentId, name, email, class: studentClass, teacher_id, defaultPassword });
     });
   });
 });
@@ -239,10 +116,10 @@ router.post('/students', (req, res) => {
 // Create a quiz
 router.post('/quizzes', (req, res) => {
   console.log(req.body);
-  const { title, class_id, teacher_id } = req.body;
-  db.run('INSERT INTO quizzes (title, class_id, teacher_id) VALUES (?, ?, ?)', [title, class_id, teacher_id], function(err) {
+  const { title, teacher_id } = req.body;
+  db.run('INSERT INTO quizzes (title, teacher_id) VALUES (?, ?)', [title, teacher_id], function(err) {
     if (err) return res.status(500).json({ error: 'Database error' });
-    res.json({ id: this.lastID, title, class_id, teacher_id });
+    res.json({ id: this.lastID, title, teacher_id });
   });
 });
 
@@ -340,56 +217,6 @@ router.get('/students', (req, res) => {
     });
   } else {
     db.all('SELECT * FROM students', [], (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      res.json(rows);
-    });
-  }
-});
-
-// Get students for a specific class
-router.get('/classes/:classId/students', (req, res) => {
-  const classId = req.params.classId;
-  const user = req.user;
-  
-  // Check if teacher owns this class
-  if (user.role === 'teacher') {
-    db.get('SELECT teacher_id FROM classes WHERE id = ?', [classId], (err, row) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      if (!row) return res.status(404).json({ error: 'Class not found' });
-      if (row.teacher_id !== user.id) return res.status(403).json({ error: 'Access denied' });
-      
-      db.all('SELECT * FROM students WHERE class_id = ?', [classId], (err2, rows) => {
-        if (err2) return res.status(500).json({ error: 'Database error' });
-        res.json(rows);
-      });
-    });
-  } else {
-    db.all('SELECT * FROM students WHERE class_id = ?', [classId], (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      res.json(rows);
-    });
-  }
-});
-
-// Get quizzes for a specific class
-router.get('/classes/:classId/quizzes', (req, res) => {
-  const classId = req.params.classId;
-  const user = req.user;
-  
-  // Check if teacher owns this class
-  if (user.role === 'teacher') {
-    db.get('SELECT teacher_id FROM classes WHERE id = ?', [classId], (err, row) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      if (!row) return res.status(404).json({ error: 'Class not found' });
-      if (row.teacher_id !== user.id) return res.status(403).json({ error: 'Access denied' });
-      
-      db.all('SELECT * FROM quizzes WHERE class_id = ?', [classId], (err2, rows) => {
-        if (err2) return res.status(500).json({ error: 'Database error' });
-        res.json(rows);
-      });
-    });
-  } else {
-    db.all('SELECT * FROM quizzes WHERE class_id = ?', [classId], (err, rows) => {
       if (err) return res.status(500).json({ error: 'Database error' });
       res.json(rows);
     });
