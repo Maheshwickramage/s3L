@@ -13,36 +13,35 @@ CREATE TABLE IF NOT EXISTS teachers (
   email TEXT UNIQUE NOT NULL
 );
 
--- Classes table
+-- Table for classes
 CREATE TABLE IF NOT EXISTS classes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  description TEXT,
   teacher_id INTEGER NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (teacher_id) REFERENCES teachers(id)
+  FOREIGN KEY (teacher_id) REFERENCES users(id)
 );
 
--- Students table
+-- Table for students
 CREATE TABLE IF NOT EXISTS students (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  student_id TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
+  email TEXT,
+  phone TEXT NOT NULL,
+  teacher_id INTEGER NOT NULL,
   class_id INTEGER,
-  teacher_id INTEGER,
-  FOREIGN KEY (class_id) REFERENCES classes(id),
-  FOREIGN KEY (teacher_id) REFERENCES teachers(id)
+  FOREIGN KEY (teacher_id) REFERENCES users(id),
+  FOREIGN KEY (class_id) REFERENCES classes(id)
 );
 
--- Quizzes table
+-- Table for quizzes
 CREATE TABLE IF NOT EXISTS quizzes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
+  teacher_id INTEGER NOT NULL,
   class_id INTEGER,
-  teacher_id INTEGER,
-  FOREIGN KEY (class_id) REFERENCES classes(id),
-  FOREIGN KEY (teacher_id) REFERENCES teachers(id)
+  FOREIGN KEY (teacher_id) REFERENCES users(id),
+  FOREIGN KEY (class_id) REFERENCES classes(id)
 );
 
 -- Leaderboard table
