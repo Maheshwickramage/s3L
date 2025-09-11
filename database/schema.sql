@@ -71,3 +71,31 @@ CREATE TABLE IF NOT EXISTS quiz_options (
   is_correct INTEGER DEFAULT 0,
   FOREIGN KEY (question_id) REFERENCES quiz_questions(id)
 );
+
+-- Chat Messages table
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id INTEGER,
+  teacher_id INTEGER,
+  message TEXT NOT NULL,
+  sender_type TEXT CHECK(sender_type IN ('student', 'teacher')) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (student_id) REFERENCES students(id),
+  FOREIGN KEY (teacher_id) REFERENCES users(id)
+);
+
+-- Class Files table
+CREATE TABLE IF NOT EXISTS class_files (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  class_id INTEGER NOT NULL,
+  teacher_id INTEGER NOT NULL,
+  filename TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  file_size INTEGER,
+  file_type TEXT,
+  description TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (class_id) REFERENCES classes(id),
+  FOREIGN KEY (teacher_id) REFERENCES users(id)
+);
