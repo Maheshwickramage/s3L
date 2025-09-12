@@ -52,7 +52,7 @@ function ClassManagement({ user, onLogout, onClassSelect }) {
   const loadClasses = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await authenticatedFetch('http://localhost:5050/api/teacher/classes');
+      const res = await authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/classes');
       if (res.ok) {
         const data = await res.json();
         setClasses(data);
@@ -74,7 +74,7 @@ function ClassManagement({ user, onLogout, onClassSelect }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await authenticatedFetch('http://localhost:5050/api/teacher/classes', {
+      const res = await authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/classes', {
         method: 'POST',
         body: JSON.stringify({ ...classForm, teacher_id: user.id })
       });
@@ -99,7 +99,7 @@ function ClassManagement({ user, onLogout, onClassSelect }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/classes/${editingClass.id}`, {
+      const res = await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/classes/${editingClass.id}`, {
         method: 'PUT',
         body: JSON.stringify(classForm)
       });
@@ -123,7 +123,7 @@ function ClassManagement({ user, onLogout, onClassSelect }) {
   const handleDeleteClass = async (classId) => {
     setLoading(true);
     try {
-      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/classes/${classId}`, {
+      const res = await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/classes/${classId}`, {
         method: 'DELETE'
       });
       

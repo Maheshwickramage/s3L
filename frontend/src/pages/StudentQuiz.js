@@ -10,7 +10,7 @@ function StudentQuiz() {
   const [score, setScore] = useState(0);
 
   useEffect(() => {
-    fetch(`http://localhost:5050/api/teacher/quizzes/${quizId}/full`)
+    fetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/quizzes/${quizId}/full`)
       .then(res => res.json())
       .then(data => setQuiz(data));
   }, [quizId]);

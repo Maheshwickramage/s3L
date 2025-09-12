@@ -119,12 +119,12 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
     setLoading(true);
     try {
       const [studentsRes, leaderboardRes, quizzesRes, resultsRes, chatRes, filesRes] = await Promise.all([
-        authenticatedFetch(`http://localhost:5050/api/teacher/classes/${selectedClass.id}/students`),
-        authenticatedFetch('http://localhost:5050/api/teacher/leaderboard'),
-        authenticatedFetch(`http://localhost:5050/api/teacher/classes/${selectedClass.id}/quizzes`),
-        authenticatedFetch('http://localhost:5050/api/teacher/results'),
-        authenticatedFetch('http://localhost:5050/api/teacher/chat'),
-        authenticatedFetch(`http://localhost:5050/api/teacher/classes/${selectedClass.id}/files`)
+        authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/classes/${selectedClass.id}/students`),
+        authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/leaderboard'),
+        authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/classes/${selectedClass.id}/quizzes`),
+        authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/results'),
+        authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/chat'),
+        authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/classes/${selectedClass.id}/files`)
       ]);
 
       // Check if any request failed
@@ -173,7 +173,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await authenticatedFetch('http://localhost:5050/api/teacher/students', {
+      const res = await authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/students', {
         method: 'POST',
         body: JSON.stringify({ ...studentForm, class_id: selectedClass.id, teacher_id: user.id })
       });
@@ -197,7 +197,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
   const handleDeleteStudent = async (id) => {
     setLoading(true);
     try {
-      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/students/${id}`, {
+      const res = await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/students/${id}`, {
         method: 'DELETE'
       });
       
@@ -219,7 +219,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await authenticatedFetch('http://localhost:5050/api/teacher/quizzes', {
+      const res = await authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/quizzes', {
         method: 'POST',
         body: JSON.stringify({ title: quizForm.title, class_id: selectedClass.id, teacher_id: user.id })
       });
@@ -256,7 +256,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
   const handleDeleteQuiz = async (id) => {
     setLoading(true);
     try {
-      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/quizzes/${id}`, {
+      const res = await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/quizzes/${id}`, {
         method: 'DELETE'
       });
       
@@ -275,7 +275,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
 
   const handleEditQuiz = async (quiz) => {
     try {
-      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/quizzes/${quiz.id}/full`);
+      const res = await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/quizzes/${quiz.id}/full`);
       if (res.ok) {
         const quizData = await res.json();
         setEditQuizData(quizData);
@@ -292,14 +292,14 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
     setLoading(true);
     try {
       // Update quiz title
-      await authenticatedFetch(`http://localhost:5050/api/teacher/quizzes/${editQuizData.id}`, {
+      await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/quizzes/${editQuizData.id}`, {
         method: 'PUT',
         body: JSON.stringify({ title: editTitle })
       });
       
       // Update each question
       for (const q of editQuestions) {
-        await authenticatedFetch(`http://localhost:5050/api/teacher/quizzes/${editQuizData.id}/questions/${q.id}`, {
+        await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/quizzes/${editQuizData.id}/questions/${q.id}`, {
           method: 'PUT',
           body: JSON.stringify({ question_text: q.question_text, marks: q.marks, options: q.options })
         });
@@ -335,7 +335,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
     setLoading(true);
     try {
       const allQuestions = currentQuestion.question_text.trim() ? [...questions, currentQuestion] : questions;
-      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/quizzes/${newQuizId}/questions`, {
+      const res = await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/quizzes/${newQuizId}/questions`, {
         method: 'POST',
         body: JSON.stringify({ questions: allQuestions })
       });
@@ -371,7 +371,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
     if (!newMessage.trim() || !selectedStudent) return;
     
     try {
-      const res = await authenticatedFetch('http://localhost:5050/api/teacher/chat', {
+      const res = await authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/chat', {
         method: 'POST',
         body: JSON.stringify({ student_id: selectedStudent.id, message: newMessage.trim() })
       });
@@ -404,7 +404,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
     };
     
     try {
-      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/classes/${selectedClass.id}/files`, {
+      const res = await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/classes/${selectedClass.id}/files`, {
         method: 'POST',
         body: JSON.stringify(fileData)
       });
@@ -424,7 +424,7 @@ function TeacherDashboard({ user, onLogout, selectedClass, onBackToClasses }) {
 
   const handleDeleteFile = async (fileId) => {
     try {
-      const res = await authenticatedFetch(`http://localhost:5050/api/teacher/files/${fileId}`, {
+      const res = await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/teacher/files/${fileId}`, {
         method: 'DELETE'
       });
       

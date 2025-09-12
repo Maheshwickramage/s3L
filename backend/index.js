@@ -8,7 +8,7 @@ const { testConnection } = require('./config/database');
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
-app.use(cors()); // Allow all origins for testing
+app.use(cors()); // Enable CORS for http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/(cors());
 app.use(express.json());
 
 // Test MySQL database connection
