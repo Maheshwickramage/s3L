@@ -1,44 +1,60 @@
 const express = require('express');
 const router = express.Router();
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('./database/s3learn.db');
+const { query, queryOne, execute } = require('../config/database');
 
 // CRUD for teachers
-router.get('/teachers', (req, res) => {
-  db.all('SELECT * FROM teachers', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
+router.get('/teachers', async (req, res) => {
+  try {
+    const rows = await query('SELECT * FROM teachers');
     res.json(rows);
-  });
+  } catch (err) {
+    console.error('Database error:', err);
+    return res.status(500).json({ error: 'Database error' });
+  }
 });
 
-router.post('/teachers', (req, res) => {
+router.post('/teachers', async (req, res) => {
   const { name, email } = req.body;
-  // Default password for new teacher
   const defaultPassword = 'changeme123';
-  db.run('INSERT INTO teachers (name, email) VALUES (?, ?)', [name, email], function(err) {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    const teacherId = this.lastID;
+  
+  try {
+    const teacherResult = await execute('INSERT INTO teachers (name, email) VALUES (?, ?)', [name, email]);
+    const teacherId = teacherResult.insertId;
+    
     // Also create a user entry for login
-    db.run('INSERT INTO users (username, password, role, must_change_password) VALUES (?, ?, ?, ?)', [email, defaultPassword, 'teacher', 1], function(err2) {
-      if (err2) return res.status(500).json({ error: 'Database error (user creation)' });
-      res.json({ id: teacherId, name, email, defaultPassword });
-    });
-  });
+    await execute('INSERT INTO users (username, password, role, must_change_password) VALUES (?, ?, ?, ?)', 
+      [email, defaultPassword, 'teacher', 1]);
+    
+    res.json({ id: teacherId, name, email, defaultPassword });
+  } catch (err) {
+    console.error('Database error:', err);
+    return res.status(500).json({ error: 'Database error' });
+  }
 });
 
-router.put('/teachers/:id', (req, res) => {
+router.put('/teachers/:id', async (req, res) => {
   const { name, email } = req.body;
-  db.run('UPDATE teachers SET name = ?, email = ? WHERE id = ?', [name, email, req.params.id], function(err) {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    res.json({ id: req.params.id, name, email });
-  });
+  const teacherId = req.params.id;
+  
+  try {
+    await execute('UPDATE teachers SET name = ?, email = ? WHERE id = ?', [name, email, teacherId]);
+    res.json({ id: teacherId, name, email });
+  } catch (err) {
+    console.error('Database error:', err);
+    return res.status(500).json({ error: 'Database error' });
+  }
 });
 
-router.delete('/teachers/:id', (req, res) => {
-  db.run('DELETE FROM teachers WHERE id = ?', [req.params.id], function(err) {
-    if (err) return res.status(500).json({ error: 'Database error' });
+router.delete('/teachers/:id', async (req, res) => {
+  const teacherId = req.params.id;
+  
+  try {
+    await execute('DELETE FROM teachers WHERE id = ?', [teacherId]);
     res.json({ success: true });
-  });
+  } catch (err) {
+    console.error('Database error:', err);
+    return res.status(500).json({ error: 'Database error' });
+  }
 });
 
 module.exports = router;

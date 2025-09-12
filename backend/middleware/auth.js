@@ -1,11 +1,8 @@
 const jwt = require('jsonwebtoken');
-const sqlite3 = require('sqlite3').verbose();
+const { queryOne } = require('../config/database');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 const JWT_EXPIRES_IN = '1h'; // 1 hour session
-
-// Create database connection
-const db = new sqlite3.Database('./database/s3learn.db');
 
 // Generate JWT token
 const generateToken = (user) => {
@@ -30,7 +27,7 @@ const verifyToken = (token) => {
 };
 
 // Authentication middleware
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -43,31 +40,32 @@ const authenticateToken = (req, res, next) => {
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
 
-  // Verify user still exists in database and get additional info for students
-  let query = 'SELECT id, username, role FROM users WHERE id = ? AND username = ?';
-  let params = [decoded.id, decoded.username];
-  
-  // If it's a student, also get student info
-  if (decoded.role === 'student') {
-    query = `
-      SELECT u.id, u.username, u.role, s.class_id, s.name as student_name, s.email as student_email, s.phone as student_phone
-      FROM users u 
-      LEFT JOIN students s ON u.username = s.phone OR u.username = s.email
-      WHERE u.id = ? AND u.username = ?
-    `;
-  }
-  
-  db.get(query, params, (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
+  try {
+    // Verify user still exists in database and get additional info for students
+    let sql = 'SELECT id, username, role FROM users WHERE id = ? AND username = ?';
+    let params = [decoded.id, decoded.username];
+    
+    // If it's a student, also get student info
+    if (decoded.role === 'student') {
+      sql = `
+        SELECT u.id, u.username, u.role, s.class_id, s.name as student_name, s.email as student_email, s.phone as student_phone
+        FROM users u 
+        LEFT JOIN students s ON u.username = s.phone OR u.username = s.email
+        WHERE u.id = ? AND u.username = ?
+      `;
     }
+    
+    const user = await queryOne(sql, params);
     if (!user) {
       return res.status(403).json({ error: 'User not found' });
     }
     
     req.user = user;
     next();
-  });
+  } catch (error) {
+    console.error('Database error in auth middleware:', error);
+    return res.status(500).json({ error: 'Database error' });
+  }
 };
 
 // Role-based authorization middleware

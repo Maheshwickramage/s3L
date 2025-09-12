@@ -4,6 +4,14 @@
   "description": "A simple platform for managing students, teachers, and super admins. Built with React, Node.js, and SQLite.",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "init-db": "node init-db.js",
+    "init-db-retry": "node scripts/init-db-with-retry.js",
+    "test-connection": "node scripts/test-connection.js",
+    "create-db": "node scripts/create-database.js",
+    "create-admin": "node scripts/create-admin.js",
+    "setup-db": "npm run create-db && npm run init-db-retry",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -18,8 +26,8 @@
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.6.5",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "sqlite3": "^5.1.7"
+    "react-dom": "^18.2.0"
   }
 }

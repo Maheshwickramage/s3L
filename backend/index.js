@@ -1,19 +1,23 @@
 const express = require('express');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
 const dotenv = require('dotenv');
-dotenv.config();
+const path = require('path');
+const { testConnection } = require('./config/database');
+
+// Load .env file from the backend directory
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 app.use(cors()); // Allow all origins for testing
 app.use(express.json());
 
-// Connect to SQLite database
-const db = new sqlite3.Database('./database/s3learn.db', (err) => {
-  if (err) {
-    console.error('Could not connect to database', err);
+// Test MySQL database connection
+testConnection().then((connected) => {
+  if (connected) {
+    console.log('Connected to MySQL database');
   } else {
-    console.log('Connected to SQLite database');
+    console.error('Failed to connect to MySQL database');
+    process.exit(1);
   }
 });
 

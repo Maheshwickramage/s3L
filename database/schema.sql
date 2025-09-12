@@ -1,101 +1,117 @@
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL,
-  role TEXT CHECK(role IN ('student', 'teacher', 'admin')) NOT NULL
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('student', 'teacher', 'admin') NOT NULL,
+  must_change_password BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Teachers table
 CREATE TABLE IF NOT EXISTS teachers (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Table for classes
 CREATE TABLE IF NOT EXISTS classes (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  teacher_id INTEGER NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (teacher_id) REFERENCES users(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  teacher_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Table for students
 CREATE TABLE IF NOT EXISTS students (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  email TEXT,
-  phone TEXT NOT NULL,
-  teacher_id INTEGER NOT NULL,
-  class_id INTEGER,
-  FOREIGN KEY (teacher_id) REFERENCES users(id),
-  FOREIGN KEY (class_id) REFERENCES classes(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255),
+  phone VARCHAR(20) NOT NULL,
+  teacher_id INT NOT NULL,
+  class_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE SET NULL
 );
 
 -- Table for quizzes
 CREATE TABLE IF NOT EXISTS quizzes (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL,
-  teacher_id INTEGER NOT NULL,
-  class_id INTEGER,
-  FOREIGN KEY (teacher_id) REFERENCES users(id),
-  FOREIGN KEY (class_id) REFERENCES classes(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  teacher_id INT NOT NULL,
+  class_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
 );
 
 -- Leaderboard table
 CREATE TABLE IF NOT EXISTS leaderboard (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  student_id INTEGER,
-  quiz_id INTEGER,
-  score INTEGER,
-  FOREIGN KEY (student_id) REFERENCES students(id),
-  FOREIGN KEY (quiz_id) REFERENCES quizzes(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  student_id INT,
+  quiz_id INT,
+  score INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
 );
 
 -- Quiz Questions table
 CREATE TABLE IF NOT EXISTS quiz_questions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  quiz_id INTEGER,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  quiz_id INT,
   question_text TEXT NOT NULL,
-  marks INTEGER NOT NULL,
-  FOREIGN KEY (quiz_id) REFERENCES quizzes(id)
+  marks INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
 );
 
 -- Quiz Options table
 CREATE TABLE IF NOT EXISTS quiz_options (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  question_id INTEGER,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  question_id INT,
   option_text TEXT NOT NULL,
-  is_correct INTEGER DEFAULT 0,
-  FOREIGN KEY (question_id) REFERENCES quiz_questions(id)
+  is_correct BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (question_id) REFERENCES quiz_questions(id) ON DELETE CASCADE
 );
 
 -- Chat Messages table
 CREATE TABLE IF NOT EXISTS chat_messages (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  student_id INTEGER,
-  teacher_id INTEGER,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  student_id INT,
+  teacher_id INT,
   message TEXT NOT NULL,
-  sender_type TEXT CHECK(sender_type IN ('student', 'teacher')) NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (student_id) REFERENCES students(id),
-  FOREIGN KEY (teacher_id) REFERENCES users(id)
+  sender_type ENUM('student', 'teacher') NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Class Files table
 CREATE TABLE IF NOT EXISTS class_files (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  class_id INTEGER NOT NULL,
-  teacher_id INTEGER NOT NULL,
-  filename TEXT NOT NULL,
-  original_name TEXT NOT NULL,
-  file_path TEXT NOT NULL,
-  file_size INTEGER,
-  file_type TEXT,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  class_id INT NOT NULL,
+  teacher_id INT NOT NULL,
+  filename VARCHAR(255) NOT NULL,
+  original_name VARCHAR(255) NOT NULL,
+  file_path VARCHAR(500) NOT NULL,
+  file_size BIGINT,
+  file_type VARCHAR(100),
   description TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (class_id) REFERENCES classes(id),
-  FOREIGN KEY (teacher_id) REFERENCES users(id)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+  FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
 );

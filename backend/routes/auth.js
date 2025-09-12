@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const { generateToken, authenticateToken } = require('../middleware/auth');
-
-const db = new sqlite3.Database('./database/s3learn.db');
+const { query, queryOne, execute } = require('../config/database');
 
 // Login route with JWT
 router.post('/login', async (req, res) => {
@@ -17,12 +15,12 @@ router.post('/login', async (req, res) => {
     }
 
     // Get user from database - for students, check both phone and email
-    let query = 'SELECT * FROM users WHERE username = ?';
+    let sql = 'SELECT * FROM users WHERE username = ?';
     let params = [username];
     
     // If it looks like an email or phone, also check students table
     if (username.includes('@') || /^\d+$/.test(username)) {
-      query = `
+      sql = `
         SELECT u.*, s.name as student_name, s.email as student_email, s.phone as student_phone, s.class_id
         FROM users u 
         LEFT JOIN students s ON u.username = s.phone OR u.username = s.email
@@ -31,11 +29,8 @@ router.post('/login', async (req, res) => {
       params = [username, username, username];
     }
     
-    db.get(query, params, async (err, user) => {
-      if (err) {
-        console.error('DB error:', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
+    try {
+      const user = await queryOne(sql, params);
       
       if (!user) {
         return res.status(401).json({ error: 'Invalid credentials' });
@@ -67,7 +62,10 @@ router.post('/login', async (req, res) => {
           class_id: user.class_id
         }
       });
-    });
+    } catch (err) {
+      console.error('DB error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -87,7 +85,7 @@ router.get('/verify', authenticateToken, (req, res) => {
 });
 
 // Change password endpoint (protected)
-router.post('/change-password', authenticateToken, (req, res) => {
+router.post('/change-password', authenticateToken, async (req, res) => {
   const { newPassword } = req.body;
   const userId = req.user.id;
   
@@ -95,20 +93,21 @@ router.post('/change-password', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'New password is required' });
   }
 
-  db.run(
-    'UPDATE users SET password = ?, must_change_password = 0 WHERE id = ?', 
-    [newPassword, userId], 
-    function(err) {
-      if (err) {
-        console.error('Password change error:', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      res.json({ success: true, message: 'Password changed successfully' });
+  try {
+    const result = await execute(
+      'UPDATE users SET password = ?, must_change_password = 0 WHERE id = ?', 
+      [newPassword, userId]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  );
+    
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (err) {
+    console.error('Password change error:', err);
+    return res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // Logout endpoint (client-side token removal)

@@ -1,22 +1,40 @@
-const { query, execute, testConnection } = require('./config/database');
+const { query, execute, testConnection } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
-const dotenv = require('dotenv');
 
-// Load .env file from the backend directory
-dotenv.config({ path: path.join(__dirname, '.env') });
+async function waitForDatabase(maxRetries = 30, delay = 2000) {
+  console.log('Waiting for database connection...');
+  
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const isConnected = await testConnection();
+      if (isConnected) {
+        console.log('Database connection successful!');
+        return true;
+      }
+    } catch (error) {
+      console.log(`Attempt ${i + 1}/${maxRetries}: Database not ready yet...`);
+    }
+    
+    if (i < maxRetries - 1) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  console.error('Failed to connect to database after maximum retries');
+  return false;
+}
 
 async function initializeDatabase() {
   try {
-    // Test database connection
-    const isConnected = await testConnection();
+    // Wait for database to be ready
+    const isConnected = await waitForDatabase();
     if (!isConnected) {
-      console.error('Failed to connect to database');
       process.exit(1);
     }
 
     // Read the schema file
-    const schemaPath = path.join(__dirname, '../database/schema.sql');
+    const schemaPath = path.join(__dirname, '../../database/schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
 
     // Split schema into individual statements
@@ -28,11 +46,20 @@ async function initializeDatabase() {
     // Execute each statement
     for (const statement of statements) {
       if (statement.trim()) {
-        await execute(statement);
+        try {
+          await execute(statement);
+          console.log('✓ Executed:', statement.substring(0, 50) + '...');
+        } catch (error) {
+          if (error.code === 'ER_TABLE_EXISTS_ERROR') {
+            console.log('⚠ Table already exists, skipping...');
+          } else {
+            throw error;
+          }
+        }
       }
     }
 
-    console.log('Database tables created successfully');
+    console.log('✓ Database tables created successfully');
 
     // Insert sample data
     try {
@@ -66,13 +93,16 @@ async function initializeDatabase() {
         ['Mathematics 101', 'Basic Mathematics Course', 1]
       );
 
-      console.log('Sample data inserted successfully');
+      console.log('✓ Sample data inserted successfully');
     } catch (error) {
-      console.log('Sample data may already exist or there was an error:', error.message);
+      console.log('⚠ Sample data may already exist or there was an error:', error.message);
     }
 
+    console.log('🎉 Database initialization completed successfully!');
+    process.exit(0);
+
   } catch (error) {
-    console.error('Error initializing database:', error);
+    console.error('❌ Error initializing database:', error);
     process.exit(1);
   }
 }
