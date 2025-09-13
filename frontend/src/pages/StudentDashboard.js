@@ -28,7 +28,7 @@ function StudentDashboard({ user, onLogout }) {
     
     try {
       // Load quizzes
-      const quizzesRes = await authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/quizzes');
+      const quizzesRes = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/quizzes');
       if (quizzesRes.ok) {
         const quizzesData = await quizzesRes.json();
         console.log('Quizzes data:', quizzesData);
@@ -39,7 +39,7 @@ function StudentDashboard({ user, onLogout }) {
       }
       
       // Load leaderboard
-      const leaderboardRes = await authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/leaderboard');
+      const leaderboardRes = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/leaderboard');
       if (leaderboardRes.ok) {
         const leaderboardData = await leaderboardRes.json();
         console.log('Leaderboard data:', leaderboardData);
@@ -50,7 +50,7 @@ function StudentDashboard({ user, onLogout }) {
       }
 
       // Load chat messages
-      const chatRes = await authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/chat');
+      const chatRes = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/chat');
       if (chatRes.ok) {
         const chatData = await chatRes.json();
         console.log('Chat data:', chatData);
@@ -61,7 +61,7 @@ function StudentDashboard({ user, onLogout }) {
       }
 
       // Load files
-      const filesRes = await authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/files');
+      const filesRes = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/files');
       if (filesRes.ok) {
         const filesData = await filesRes.json();
         console.log('Files data:', filesData);
@@ -82,7 +82,7 @@ function StudentDashboard({ user, onLogout }) {
 
 
   const handleStartQuiz = async () => {
-    const res = await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/quizzes/${selectedQuiz}/full`);
+    const res = await authenticatedFetch(`https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/quizzes/${selectedQuiz}/full`);
     if (res.ok) {
       const data = await res.json();
       setQuizData(data);
@@ -98,7 +98,7 @@ function StudentDashboard({ user, onLogout }) {
   };
 
   const handleSubmitQuiz = async () => {
-    const res = await authenticatedFetch(`http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/quizzes/${quizData.id}/submit`, {
+    const res = await authenticatedFetch(`https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/quizzes/${quizData.id}/submit`, {
       method: 'POST',
       body: JSON.stringify({ answers })
     });
@@ -116,7 +116,7 @@ function StudentDashboard({ user, onLogout }) {
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
     
-    const res = await authenticatedFetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/chat', {
+    const res = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/chat', {
       method: 'POST',
       body: JSON.stringify({ message: newMessage.trim() })
     });

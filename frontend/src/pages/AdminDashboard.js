@@ -10,14 +10,14 @@ function AdminDashboard() {
   const [email, setEmail] = useState('');
 
   useEffect(() => {
-    fetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/admin/teachers')
+    fetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/admin/teachers')
       .then(res => res.json())
       .then(data => setTeachers(data));
   }, []);
 
   const handleAddTeacher = async (e) => {
     e.preventDefault();
-    const res = await fetch('http://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/admin/teachers', {
+    const res = await fetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/admin/teachers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email })
