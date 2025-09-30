@@ -1,9 +1,13 @@
-version: '3'
+version: '3.8'
+
 services:
+  # Backend API Service
   backend:
     build: ./backend
+    container_name: s3learn-backend
+    restart: unless-stopped
     ports:
-      - "5050:5050"
+      - "${PORT}:${PORT}"
     environment:
       - DB_HOST=${DB_HOST}
       - DB_USER=${DB_USER}
@@ -12,11 +16,36 @@ services:
       - DB_PORT=${DB_PORT}
       - JWT_SECRET=${JWT_SECRET}
       - NODE_ENV=${NODE_ENV}
+      - PORT=${PORT}
     env_file:
       - .env
+    networks:
+      - s3learn-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:${PORT}/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Service (React + Nginx)
   frontend:
     build: ./frontend
+    container_name: s3learn-frontend
+    restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT}:80"
     depends_on:
       - backend
+    networks:
+      - s3learn-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Custom network for service communication
+networks:
+  s3learn-network:
+    driver: bridge

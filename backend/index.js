@@ -34,6 +34,15 @@ app.use('/api/student', studentRoutes);
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    service: 'S3Learn Backend API'
+  });
+});
+
 // Basic route
 app.get('/', (req, res) => {
   res.send('Student Management System Backend');
