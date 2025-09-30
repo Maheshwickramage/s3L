@@ -70,7 +70,7 @@ export const authenticatedFetch = async (url, options = {}) => {
 // Verify token with backend
 export const verifyToken = async () => {
   try {
-    const response = await authenticatedFetch('http://localhost:5050/api/auth/verify');
+    const response = await authenticatedFetch('http://98.84.104.233:5050/api/auth/verify');
     if (response.ok) {
       const data = await response.json();
       return data.user;
@@ -85,7 +85,7 @@ export const verifyToken = async () => {
 // Login function
 export const login = async (username, password) => {
   try {
-    const response = await fetch('http://localhost:5050/api/auth/login', {
+    const response = await fetch('http://98.84.104.233:5050/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ export const login = async (username, password) => {
 // Register function for students
 export const register = async (userData) => {
   try {
-    const response = await fetch('http://localhost:5050/api/auth/register', {
+    const response = await fetch('http://98.84.104.233:5050/api/auth/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ export const register = async (userData) => {
 // Logout function
 export const logout = async () => {
   try {
-    await authenticatedFetch('http://localhost:5050/api/auth/logout', {
+    await authenticatedFetch('http://98.84.104.233:5050/api/auth/logout', {
       method: 'POST',
     });
   } catch (error) {

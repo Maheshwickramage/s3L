@@ -39,11 +39,11 @@ services:
       - backend
     networks:
       - s3learn-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # healthcheck:
+    #   test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
 
 # Custom network for service communication
 networks:
