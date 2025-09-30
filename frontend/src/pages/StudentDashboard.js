@@ -1,316 +1,453 @@
 
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Typography, Paper, List, ListItem, ListItemText, Divider, Radio, RadioGroup, FormControlLabel, TextField, IconButton, Card, CardContent, CardActions, Avatar, Tabs, Tab, Alert, Snackbar } from '@mui/material';
-import { Send as SendIcon, Download as DownloadIcon, AttachFile as AttachFileIcon, Chat as ChatIcon, Description as DescriptionIcon } from '@mui/icons-material';
+import { 
+  Box, Button, Typography, Paper, Card, CardContent, Avatar, Grid, 
+  Alert, Snackbar, LinearProgress, Chip, Stack
+} from '@mui/material';
+import { 
+  Quiz as QuizIcon,
+  School as SchoolIcon,
+  TrendingUp as TrendingUpIcon,
+  Star as StarIcon,
+  EmojiEvents as TrophyIcon,
+  Assignment as AssignmentIcon,
+  Class as ClassIcon,
+  Timeline as TimelineIcon,
+  Speed as SpeedIcon,
+  PersonOutline as PersonIcon,
+  Home as HomeIcon
+} from '@mui/icons-material';
 import { authenticatedFetch } from '../utils/auth';
+import { useNavigate } from 'react-router-dom';
 
 function StudentDashboard({ user, onLogout }) {
-  const [quizzes, setQuizzes] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [selectedQuiz, setSelectedQuiz] = useState('');
-  const [quizData, setQuizData] = useState(null);
-  const [started, setStarted] = useState(false);
-  const [answers, setAnswers] = useState({});
-  const [submitted, setSubmitted] = useState(false);
-  const [result, setResult] = useState(null);
-  const [tabValue, setTabValue] = useState(0);
-  const [chatMessages, setChatMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [files, setFiles] = useState([]);
+  const navigate = useNavigate();
+  const [studentData, setStudentData] = useState({
+    totalQuizzes: 0,
+    completedQuizzes: 0,
+    averageScore: 0,
+    totalClasses: 0,
+    rank: 0,
+    recentQuizzes: [],
+    weeklyProgress: [],
+    achievements: [],
+    enrolledClasses: []
+  });
+  const [quizHistory, setQuizHistory] = useState([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
   };
 
-  const loadData = async () => {
-    console.log('Loading student data for user:', user);
-    
-    try {
-      // Load quizzes
-      const quizzesRes = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/quizzes');
-      if (quizzesRes.ok) {
-        const quizzesData = await quizzesRes.json();
-        console.log('Quizzes data:', quizzesData);
-        setQuizzes(Array.isArray(quizzesData) ? quizzesData : []);
-      } else {
-        console.error('Error loading quizzes:', quizzesRes.status);
-        showSnackbar('Error loading quizzes', 'error');
-      }
-      
-      // Load leaderboard
-      const leaderboardRes = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/leaderboard');
-      if (leaderboardRes.ok) {
-        const leaderboardData = await leaderboardRes.json();
-        console.log('Leaderboard data:', leaderboardData);
-        setLeaderboard(Array.isArray(leaderboardData) ? leaderboardData : []);
-      } else {
-        console.error('Error loading leaderboard:', leaderboardRes.status);
-        showSnackbar('Error loading leaderboard', 'error');
-      }
-
-      // Load chat messages
-      const chatRes = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/chat');
-      if (chatRes.ok) {
-        const chatData = await chatRes.json();
-        console.log('Chat data:', chatData);
-        setChatMessages(Array.isArray(chatData) ? chatData : []);
-      } else {
-        console.error('Error loading chat:', chatRes.status);
-        showSnackbar('Error loading chat', 'error');
-      }
-
-      // Load files
-      const filesRes = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/files');
-      if (filesRes.ok) {
-        const filesData = await filesRes.json();
-        console.log('Files data:', filesData);
-        setFiles(Array.isArray(filesData) ? filesData : []);
-      } else {
-        console.error('Error loading files:', filesRes.status);
-        showSnackbar('Error loading files', 'error');
-      }
-    } catch (error) {
-      console.error('Error in loadData:', error);
-      showSnackbar('Error loading data', 'error');
-    }
-  };
-
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        console.log('Loading student analytics for user:', user);
+        
+        // Load student analytics
+        const analyticsRes = await authenticatedFetch('http://localhost:5050/api/student/analytics');
+        console.log('Analytics response status:', analyticsRes.status);
+        
+        if (analyticsRes.ok) {
+          const analytics = await analyticsRes.json();
+          console.log('Analytics data received:', analytics);
+          setStudentData(prev => ({ ...prev, ...analytics }));
+        } else {
+          const errorText = await analyticsRes.text();
+          console.error('Analytics API error:', errorText);
+        }
+
+        // Load quiz history
+        const historyRes = await authenticatedFetch('http://localhost:5050/api/student/quiz-history');
+        console.log('Quiz history response status:', historyRes.status);
+        
+        if (historyRes.ok) {
+          const history = await historyRes.json();
+          console.log('Quiz history data received:', history);
+          setQuizHistory(Array.isArray(history) ? history : []);
+        } else {
+          const errorText = await historyRes.text();
+          console.error('Quiz history API error:', errorText);
+        }
+
+      } catch (error) {
+        console.error('Error loading student analytics:', error);
+        showSnackbar('Error loading analytics data', 'error');
+      }
+    };
+    
     loadData();
-  }, [user.class_id]);
+  }, [user]);
 
-
-  const handleStartQuiz = async () => {
-    const res = await authenticatedFetch(`https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/quizzes/${selectedQuiz}/full`);
-    if (res.ok) {
-      const data = await res.json();
-      setQuizData(data);
-      setStarted(true);
-      setAnswers({});
-      setSubmitted(false);
-      setResult(null);
-    }
+  const getScoreColor = (score, total) => {
+    const percentage = (score / total) * 100;
+    if (percentage >= 80) return '#4CAF50';
+    if (percentage >= 60) return '#FF9800';
+    return '#F44336';
   };
 
-  const handleAnswerChange = (questionId, optionId) => {
-    setAnswers({ ...answers, [questionId]: optionId });
+  const getPerformanceBadge = (score, total) => {
+    const percentage = (score / total) * 100;
+    if (percentage >= 90) return { label: 'Excellent', color: 'success' };
+    if (percentage >= 80) return { label: 'Very Good', color: 'info' };
+    if (percentage >= 70) return { label: 'Good', color: 'warning' };
+    if (percentage >= 60) return { label: 'Fair', color: 'default' };
+    return { label: 'Needs Improvement', color: 'error' };
   };
 
-  const handleSubmitQuiz = async () => {
-    const res = await authenticatedFetch(`https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/quizzes/${quizData.id}/submit`, {
-      method: 'POST',
-      body: JSON.stringify({ answers })
-    });
-    
-    if (res.ok) {
-      const data = await res.json();
-      setResult(data.score);
-      setSubmitted(true);
-      
-      // Refresh leaderboard
-      loadData();
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
-    
-    const res = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/student/chat', {
-      method: 'POST',
-      body: JSON.stringify({ message: newMessage.trim() })
-    });
-    
-    if (res.ok) {
-      setNewMessage('');
-      loadData(); // Refresh chat messages
-      showSnackbar('Message sent successfully!');
-    } else {
-      showSnackbar('Failed to send message', 'error');
-    }
-  };
-
-  const handleDownloadFile = (file) => {
-    // In a real application, this would download the actual file
-    showSnackbar(`Downloading ${file.original_name}...`);
-  };
+  // Analytics Cards Component
+  const AnalyticsCard = ({ title, value, subtitle, icon, color, progress }) => (
+    <Card sx={{ 
+      height: '100%', 
+      background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
+      border: `1px solid ${color}30`,
+      transition: 'transform 0.2s, box-shadow 0.2s',
+      '&:hover': {
+        transform: 'translateY(-4px)',
+        boxShadow: '0 8px 25px rgba(0,0,0,0.1)'
+      }
+    }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Avatar sx={{ bgcolor: color, mr: 2 }}>
+            {icon}
+          </Avatar>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: color }}>
+              {value}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {subtitle}
+            </Typography>
+          </Box>
+        </Box>
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+          {title}
+        </Typography>
+        {progress !== undefined && (
+          <Box>
+            <LinearProgress 
+              variant="determinate" 
+              value={progress} 
+              sx={{ 
+                height: 8, 
+                borderRadius: 4,
+                bgcolor: `${color}20`,
+                '& .MuiLinearProgress-bar': { bgcolor: color }
+              }} 
+            />
+            <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+              {progress.toFixed(1)}% Complete
+            </Typography>
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <Box sx={{ maxWidth: 1200, margin: 'auto', padding: 4, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
+    <Box sx={{ maxWidth: 1400, margin: 'auto', padding: 3, bgcolor: '#f8f9fa', minHeight: '100vh' }}>
+      {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h3" sx={{ fontWeight: 700, color: '#2d3436' }}>Student Dashboard</Typography>
-        <Button variant="outlined" color="error" onClick={onLogout}>
-          Logout
-        </Button>
-      </Box>
-      
-      <Paper elevation={4} sx={{ padding: 2, mb: 4, borderRadius: 3, bgcolor: '#fff' }}>
-        <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} centered>
-          <Tab label="Quizzes" icon={<DescriptionIcon />} />
-          <Tab label="Leaderboard" icon={<ChatIcon />} />
-          <Tab label="Chat with Teacher" icon={<ChatIcon />} />
-          <Tab label="Class Files" icon={<AttachFileIcon />} />
-        </Tabs>
-      </Paper>
-
-      {/* Quizzes Tab */}
-      {tabValue === 0 && (
-        <Paper elevation={4} sx={{ padding: 4, mb: 4, borderRadius: 3, bgcolor: '#fff' }}>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: '#0984e3' }}>Available Quizzes</Typography>
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
-          {(Array.isArray(quizzes) && quizzes.length > 0) ? quizzes.map(q => (
-            <Paper key={q.id} elevation={2} sx={{ p: 2, minWidth: 200, flex: '1 1 220px', bgcolor: selectedQuiz === q.id ? '#dfe6e9' : '#f1f2f6', cursor: 'pointer', border: selectedQuiz === q.id ? '2px solid #0984e3' : 'none' }} onClick={() => { setSelectedQuiz(q.id); setStarted(false); setQuizData(null); }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>{q.title}</Typography>
-              <Button variant={selectedQuiz === q.id ? 'contained' : 'outlined'} color="primary" size="small" sx={{ mt: 1 }} onClick={e => { e.stopPropagation(); setSelectedQuiz(q.id); setStarted(false); setQuizData(null); }}>
-                {selectedQuiz === q.id ? 'Selected' : 'Select'}
-              </Button>
-            </Paper>
-          )) : (
-            <Typography variant="body1" color="text.secondary">No quizzes available yet.</Typography>
-          )}
+        <Box>
+          <Typography variant="h3" sx={{ fontWeight: 700, color: '#2d3436', mb: 1 }}>
+            Welcome back, {user.name}! 👋
+          </Typography>
+          <Typography variant="h6" color="text.secondary">
+            Your learning journey continues here
+          </Typography>
         </Box>
-        {selectedQuiz && !started && (
-          <Button variant="contained" color="primary" fullWidth sx={{ mb: 2, fontWeight: 600 }} onClick={handleStartQuiz}>
-            Start Quiz
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Button 
+            variant="contained" 
+            color="primary"
+            startIcon={<HomeIcon />}
+            onClick={() => navigate('/')}
+            sx={{ 
+              height: 'fit-content',
+              textTransform: 'none',
+              fontWeight: 600
+            }}
+          >
+            Back to Home
           </Button>
-        )}
-        {started && quizData && (
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="h5" gutterBottom sx={{ color: '#00b894', fontWeight: 600 }}>{quizData.title}</Typography>
-            {quizData.questions.map(q => (
-              <Paper key={q.id} elevation={1} sx={{ p: 2, mb: 3, bgcolor: '#f9fbe7' }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>{q.question_text} <span style={{ color: '#636e72' }}>({q.marks} marks)</span></Typography>
-                <RadioGroup
-                  value={answers[q.id] || ''}
-                  onChange={e => handleAnswerChange(q.id, parseInt(e.target.value))}
-                >
-                  {q.options.map(opt => (
-                    <FormControlLabel
-                      key={opt.id}
-                      value={opt.id}
-                      control={<Radio />}
-                      label={opt.option_text}
-                      disabled={submitted}
-                    />
-                  ))}
-                </RadioGroup>
-              </Paper>
-            ))}
-            {!submitted ? (
-              <Button variant="contained" color="success" sx={{ fontWeight: 600 }} onClick={handleSubmitQuiz}>Submit Answers</Button>
-            ) : (
-              <Typography variant="h6" color="success.main" sx={{ mt: 2 }}>Your Score: {result} / {quizData.questions.reduce((a, b) => a + b.marks, 0)}</Typography>
-            )}
-          </Box>
-        )}
-        </Paper>
-      )}
+          <Button 
+            variant="outlined" 
+            color="error" 
+            onClick={onLogout}
+            sx={{ height: 'fit-content' }}
+          >
+            Logout
+          </Button>
+        </Box>
+      </Box>
 
-      {/* Leaderboard Tab */}
-      {tabValue === 1 && (
-        <Paper elevation={4} sx={{ padding: 4, mb: 4, borderRadius: 3, bgcolor: '#fff' }}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: '#6c5ce7' }}>Class Leaderboard</Typography>
-          <List>
-            {(Array.isArray(leaderboard) ? leaderboard : []).map((l, idx) => (
-              <React.Fragment key={idx}>
-                <ListItem sx={{ bgcolor: idx === 0 ? '#ffeaa7' : '#f1f2f6', borderRadius: 2, mb: 1 }}>
-                  <ListItemText 
-                    primary={<span style={{ fontWeight: 600 }}>{l.name}</span>} 
-                    secondary={`Score: ${l.score} • Quiz: ${l.quiz_name} • ${new Date(l.submitted_at).toLocaleDateString()}`} 
-                  />
-                </ListItem>
-                <Divider />
-              </React.Fragment>
-            ))}
-          </List>
-        </Paper>
-      )}
+      {/* Analytics Overview Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <AnalyticsCard
+            title="Quizzes Completed"
+            value={studentData.completedQuizzes}
+            subtitle={`out of ${studentData.totalQuizzes} available`}
+            icon={<QuizIcon />}
+            color="#6c5ce7"
+            progress={(studentData.completedQuizzes / Math.max(studentData.totalQuizzes, 1)) * 100}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <AnalyticsCard
+            title="Average Score"
+            value={`${studentData.averageScore}%`}
+            subtitle="Overall performance"
+            icon={<TrendingUpIcon />}
+            color="#00b894"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <AnalyticsCard
+            title="Class Rank"
+            value={studentData.rank > 0 ? `#${studentData.rank}` : 'N/A'}
+            subtitle="Current position"
+            icon={<TrophyIcon />}
+            color="#fdcb6e"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <AnalyticsCard
+            title="Enrolled Classes"
+            value={studentData.totalClasses}
+            subtitle="Active enrollments"
+            icon={<ClassIcon />}
+            color="#e17055"
+          />
+        </Grid>
+      </Grid>
 
-      {/* Chat Tab */}
-      {tabValue === 2 && (
-        <Paper elevation={4} sx={{ padding: 4, mb: 4, borderRadius: 3, bgcolor: '#fff' }}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: '#00b894' }}>Chat with Teacher</Typography>
-          <Box sx={{ height: 400, overflowY: 'auto', mb: 2, border: '1px solid #ddd', borderRadius: 2, p: 2 }}>
-            {chatMessages.map((msg, idx) => (
-              <Box key={idx} sx={{ mb: 2, display: 'flex', justifyContent: msg.sender_type === 'student' ? 'flex-end' : 'flex-start' }}>
-                <Card sx={{ 
-                  maxWidth: '70%', 
-                  bgcolor: msg.sender_type === 'student' ? '#0984e3' : '#f1f2f6',
-                  color: msg.sender_type === 'student' ? 'white' : 'black'
-                }}>
-                  <CardContent sx={{ p: 2 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                      {msg.sender_type === 'student' ? 'You' : 'Teacher'}
-                    </Typography>
-                    <Typography variant="body1">{msg.message}</Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                      {new Date(msg.created_at).toLocaleString()}
-                    </Typography>
-                  </CardContent>
-                </Card>
+      <Grid container spacing={3}>
+        {/* Recent Quiz History */}
+        <Grid item xs={12} lg={8}>
+          <Card sx={{ height: '500px', display: 'flex', flexDirection: 'column' }}>
+            <CardContent sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <TimelineIcon sx={{ color: '#0984e3', mr: 2 }} />
+                <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                  Recent Quiz Performance
+                </Typography>
               </Box>
-            ))}
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField
-              fullWidth
-              placeholder="Type your message..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            />
-            <IconButton color="primary" onClick={handleSendMessage} disabled={!newMessage.trim()}>
-              <SendIcon />
-            </IconButton>
-          </Box>
-        </Paper>
-      )}
+              
+              <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                {quizHistory.length > 0 ? (
+                  <Stack spacing={2}>
+                    {quizHistory.slice(0, 8).map((quiz, index) => {
+                      const badge = getPerformanceBadge(quiz.score, quiz.total_marks);
+                      return (
+                        <Paper 
+                          key={index} 
+                          sx={{ 
+                            p: 3, 
+                            border: '1px solid #e0e6ed',
+                            borderRadius: 2,
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                              transform: 'translateY(-2px)'
+                            }
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                                {quiz.quiz_name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                {quiz.subject} • {new Date(quiz.submitted_at).toLocaleDateString()}
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Typography 
+                                  variant="h6" 
+                                  sx={{ 
+                                    fontWeight: 700,
+                                    color: getScoreColor(quiz.score, quiz.total_marks)
+                                  }}
+                                >
+                                  {quiz.score}/{quiz.total_marks}
+                                </Typography>
+                                <Chip 
+                                  label={badge.label} 
+                                  color={badge.color} 
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              </Box>
+                            </Box>
+                            <Box sx={{ textAlign: 'center', ml: 2 }}>
+                              <Typography variant="h4" sx={{ 
+                                fontWeight: 700,
+                                color: getScoreColor(quiz.score, quiz.total_marks)
+                              }}>
+                                {Math.round((quiz.score / quiz.total_marks) * 100)}%
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Score
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Paper>
+                      );
+                    })}
+                  </Stack>
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 8 }}>
+                    <AssignmentIcon sx={{ fontSize: 64, color: '#ddd', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary">
+                      No quiz history yet
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Start taking quizzes to see your performance here
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-      {/* Files Tab */}
-      {tabValue === 3 && (
-        <Paper elevation={4} sx={{ padding: 4, mb: 4, borderRadius: 3, bgcolor: '#fff' }}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: '#e17055' }}>Class Files</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
-            {files.map((file) => (
-              <Card key={file.id} sx={{ maxWidth: 345 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar sx={{ bgcolor: '#e17055', mr: 2 }}>
-                      <AttachFileIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6" component="div" noWrap>
-                        {file.original_name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {(file.file_size / 1024).toFixed(1)} KB
+        {/* Progress Summary & Quick Actions */}
+        <Grid item xs={12} lg={4}>
+          <Stack spacing={3}>
+            {/* Progress Summary */}
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <SpeedIcon sx={{ color: '#6c5ce7', mr: 2 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Progress Summary
+                  </Typography>
+                </Box>
+                
+                <Stack spacing={3}>
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2">Quiz Completion</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {Math.round((studentData.completedQuizzes / Math.max(studentData.totalQuizzes, 1)) * 100)}%
                       </Typography>
                     </Box>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={(studentData.completedQuizzes / Math.max(studentData.totalQuizzes, 1)) * 100}
+                      sx={{ height: 8, borderRadius: 4 }}
+                    />
                   </Box>
-                  {file.description && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      {file.description}
-                    </Typography>
-                  )}
-                  <Typography variant="caption" color="text.secondary">
-                    Uploaded: {new Date(file.created_at).toLocaleDateString()}
+                  
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2">Performance Goal</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {studentData.averageScore}%
+                      </Typography>
+                    </Box>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={studentData.averageScore}
+                      sx={{ height: 8, borderRadius: 4 }}
+                      color="success"
+                    />
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+
+            {/* Achievements */}
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <StarIcon sx={{ color: '#fdcb6e', mr: 2 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Achievements
                   </Typography>
-                </CardContent>
-                <CardActions>
-                  <Button size="small" startIcon={<DownloadIcon />} onClick={() => handleDownloadFile(file)}>
-                    Download
+                </Box>
+                
+                {studentData.achievements?.length > 0 ? (
+                  <Stack spacing={2}>
+                    {studentData.achievements.map((achievement, index) => (
+                      <Box key={index} sx={{ display: 'flex', alignItems: 'center' }}>
+                        <TrophyIcon sx={{ color: '#fdcb6e', mr: 2 }} />
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {achievement.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {achievement.description}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 3 }}>
+                    <TrophyIcon sx={{ fontSize: 48, color: '#ddd', mb: 1 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Complete quizzes to earn achievements!
+                    </Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card>
+              <CardContent>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                  Quick Actions
+                </Typography>
+                <Stack spacing={2}>
+                  <Button 
+                    variant="contained" 
+                    fullWidth 
+                    startIcon={<HomeIcon />}
+                    sx={{ 
+                      justifyContent: 'flex-start',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                      }
+                    }}
+                    onClick={() => navigate('/')}
+                  >
+                    Browse All Quizzes
                   </Button>
-                </CardActions>
-              </Card>
-            ))}
-            {files.length === 0 && (
-              <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                No files available yet.
-              </Typography>
-            )}
-          </Box>
-        </Paper>
-      )}
+                  <Button 
+                    variant="outlined" 
+                    fullWidth 
+                    startIcon={<QuizIcon />}
+                    sx={{ justifyContent: 'flex-start' }}
+                  >
+                    Quick Quiz
+                  </Button>
+                  <Button 
+                    variant="outlined" 
+                    fullWidth 
+                    startIcon={<SchoolIcon />}
+                    sx={{ justifyContent: 'flex-start' }}
+                  >
+                    Browse Subjects
+                  </Button>
+                  <Button 
+                    variant="outlined" 
+                    fullWidth 
+                    startIcon={<PersonIcon />}
+                    sx={{ justifyContent: 'flex-start' }}
+                  >
+                    View Profile
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Stack>
+        </Grid>
+      </Grid>
 
       {/* Snackbar */}
       <Snackbar

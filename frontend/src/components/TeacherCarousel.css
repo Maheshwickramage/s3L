@@ -1,0 +1,236 @@
+/* Teacher Carousel Container */
+.teacher-carousel-container {
+  position: relative;
+  margin: 0 -20px;
+  padding: 0 20px;
+}
+
+/* Carousel Slide */
+.carousel-slide {
+  padding: 0 15px;
+  box-sizing: border-box;
+}
+
+/* Custom Arrows */
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  box-shadow: var(--shadow-medium);
+  transition: var(--transition);
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.carousel-arrow:hover {
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: var(--shadow-heavy);
+}
+
+.carousel-prev {
+  left: -25px;
+}
+
+.carousel-next {
+  right: -25px;
+}
+
+/* Slick Dots Customization */
+.teacher-carousel-container .slick-dots {
+  bottom: -50px;
+  margin: 0;
+}
+
+.teacher-carousel-container .slick-dots li {
+  margin: 0 5px;
+}
+
+.teacher-carousel-container .slick-dots li button {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.teacher-carousel-container .slick-dots li.slick-active button,
+.teacher-carousel-container .slick-dots li button:hover {
+  background: var(--accent-blue);
+  transform: scale(1.2);
+}
+
+.teacher-carousel-container .slick-dots li button:before {
+  display: none;
+}
+
+/* Compact Teacher Card Styles */
+.teacher-card.compact {
+  height: 350px !important;
+  min-height: 350px !important;
+  margin: 0 auto;
+  max-width: 300px;
+}
+
+.teacher-content.compact {
+  padding: 1.5rem 1rem !important;
+}
+
+.teacher-header.compact {
+  margin-bottom: 1rem;
+}
+
+.teacher-avatar.compact {
+  width: 60px !important;
+  height: 60px !important;
+}
+
+.verification-badge.compact {
+  font-size: 1rem !important;
+  bottom: -3px;
+  right: 3px;
+}
+
+.teacher-name.compact {
+  font-size: 1rem !important;
+  margin-bottom: 0.3rem !important;
+}
+
+.teacher-subject.compact {
+  margin-bottom: 0.8rem !important;
+  font-size: 0.85rem !important;
+}
+
+.rating-section.compact {
+  margin-bottom: 0.8rem;
+  gap: 0.3rem;
+}
+
+.rating-section.compact .stars {
+  gap: 1px;
+}
+
+.rating-section.compact .star {
+  font-size: 0.85rem;
+}
+
+.rating-section.compact .rating-text {
+  font-size: 0.75rem !important;
+}
+
+.teacher-details.compact {
+  margin-bottom: 0.8rem;
+  gap: 0.3rem;
+}
+
+.teacher-details.compact .detail-item {
+  gap: 0.3rem;
+}
+
+.teacher-details.compact .detail-icon {
+  font-size: 0.85rem;
+}
+
+.teacher-details.compact .MuiTypography-body2 {
+  font-size: 0.75rem !important;
+}
+
+.specialties.compact {
+  margin-bottom: 0.8rem;
+  gap: 0.3rem;
+}
+
+.specialty-chip.compact {
+  font-size: 0.65rem !important;
+  height: 20px !important;
+}
+
+.teacher-price.compact {
+  font-size: 0.95rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.teacher-actions.compact {
+  gap: 0.3rem;
+}
+
+.teacher-actions.compact .MuiButton-root {
+  font-size: 0.75rem !important;
+  padding: 6px 12px !important;
+  min-width: unset !important;
+}
+
+.teacher-actions.compact .MuiButton-startIcon {
+  margin-right: 4px !important;
+}
+
+.teacher-actions.compact .MuiButton-startIcon > .MuiSvgIcon-root {
+  font-size: 0.9rem !important;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .teacher-carousel-container {
+    margin: 0 -10px;
+    padding: 0 10px;
+  }
+  
+  .carousel-slide {
+    padding: 0 10px;
+  }
+  
+  .carousel-arrow {
+    display: none;
+  }
+  
+  .teacher-card.compact {
+    max-width: 280px;
+    height: 320px !important;
+    min-height: 320px !important;
+  }
+  
+  .teacher-content.compact {
+    padding: 1.2rem 0.8rem !important;
+  }
+  
+  .teacher-carousel-container .slick-dots {
+    bottom: -40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .teacher-card.compact {
+    max-width: 260px;
+    height: 300px !important;
+    min-height: 300px !important;
+  }
+  
+  .teacher-content.compact {
+    padding: 1rem 0.8rem !important;
+  }
+  
+  .teacher-avatar.compact {
+    width: 50px !important;
+    height: 50px !important;
+  }
+  
+  .teacher-name.compact {
+    font-size: 0.9rem !important;
+  }
+  
+  .teacher-price.compact {
+    font-size: 0.85rem !important;
+  }
+}

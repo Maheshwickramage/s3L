@@ -5,7 +5,188 @@ const { query, queryOne, execute } = require('../config/database');
 
 // Apply authentication to all student routes
 router.use(authenticateToken);
-router.use(authorizeRole(['student']));
+
+// Student Analytics Endpoint
+router.get('/analytics', async (req, res) => {
+  try {
+    const user = req.user;
+    console.log('Analytics request for user:', user);
+    
+    // Get student data - handle both direct student users and users with student data
+    let studentId = null;
+    let classId = null;
+    
+    if (user.role === 'student') {
+      // For users registered as students
+      const student = await queryOne(
+        'SELECT * FROM students WHERE phone = ? OR email = ?',
+        [user.username, user.username]
+      );
+      
+      if (student) {
+        studentId = student.id;
+        classId = student.class_id;
+      } else {
+        // Create a student record if it doesn't exist
+        const insertResult = await execute(
+          'INSERT INTO students (name, phone, email, teacher_id, class_id) VALUES (?, ?, ?, 1, 1)',
+          [user.student_name || user.username, user.username, user.student_email || null]
+        );
+        studentId = insertResult.insertId;
+        classId = 1; // Default class
+      }
+    } else {
+      // Fallback for testing - use user ID as student ID
+      studentId = user.id;
+      classId = user.class_id || 1;
+    }
+
+    console.log('Using studentId:', studentId, 'classId:', classId);
+
+    // Get total available quizzes
+    const totalQuizzesResult = await queryOne('SELECT COUNT(*) as count FROM quizzes');
+    const totalQuizzes = totalQuizzesResult?.count || 0;
+
+    // Get completed quizzes count
+    const completedQuizzesResult = await queryOne(
+      'SELECT COUNT(DISTINCT quiz_id) as count FROM quiz_attempts WHERE student_id = ?',
+      [studentId]
+    );
+    const completedQuizzes = completedQuizzesResult?.count || 0;
+
+    // Get average score percentage
+    const avgScoreResult = await queryOne(
+      'SELECT AVG((score/total_marks)*100) as avg_score FROM quiz_attempts WHERE student_id = ? AND total_marks > 0',
+      [studentId]
+    );
+    const averageScore = Math.round(avgScoreResult?.avg_score || 0);
+
+    // Get class rank (simplified - based on average score)
+    let rank = 0;
+    if (averageScore > 0) {
+      const rankResult = await queryOne(`
+        SELECT COUNT(*) + 1 as rank FROM (
+          SELECT student_id, AVG((score/total_marks)*100) as avg_score 
+          FROM quiz_attempts 
+          WHERE student_id IN (SELECT id FROM students WHERE class_id = ?) AND total_marks > 0
+          GROUP BY student_id
+          HAVING avg_score > ?
+        ) as higher_scores
+      `, [classId, averageScore]);
+      rank = rankResult?.rank || 0;
+    }
+
+    // Get enrolled classes count
+    const totalClasses = 1; // For now, assuming 1 class per student
+
+    // Get recent achievements (based on performance)
+    const achievements = [];
+    if (completedQuizzes >= 1) {
+      achievements.push({
+        title: 'First Steps',
+        description: 'Completed your first quiz!'
+      });
+    }
+    if (completedQuizzes >= 3) {
+      achievements.push({
+        title: 'Quiz Explorer',
+        description: 'Completed 3 quizzes'
+      });
+    }
+    if (completedQuizzes >= 5) {
+      achievements.push({
+        title: 'Quiz Master',
+        description: 'Completed 5 or more quizzes'
+      });
+    }
+    if (averageScore >= 70) {
+      achievements.push({
+        title: 'Good Student',
+        description: 'Maintained 70%+ average score'
+      });
+    }
+    if (averageScore >= 80) {
+      achievements.push({
+        title: 'High Achiever',
+        description: 'Maintained 80%+ average score'
+      });
+    }
+    if (completedQuizzes >= 10) {
+      achievements.push({
+        title: 'Dedicated Learner',
+        description: 'Completed 10+ quizzes'
+      });
+    }
+
+    const analyticsData = {
+      totalQuizzes,
+      completedQuizzes,
+      averageScore,
+      totalClasses,
+      rank: rank > 100 ? 0 : rank, // If rank is too high, show as unranked
+      achievements
+    };
+
+    console.log('Sending analytics data:', analyticsData);
+    res.json(analyticsData);
+
+  } catch (error) {
+    console.error('Error fetching student analytics:', error);
+    res.status(500).json({ error: 'Server error: ' + error.message });
+  }
+});
+
+// Student Quiz History Endpoint
+router.get('/quiz-history', async (req, res) => {
+  try {
+    const user = req.user;
+    console.log('Quiz history request for user:', user);
+    
+    // Get student data - handle both direct student users and users with student data
+    let studentId = null;
+    
+    if (user.role === 'student') {
+      const student = await queryOne(
+        'SELECT * FROM students WHERE phone = ? OR email = ?',
+        [user.username, user.username]
+      );
+      
+      if (student) {
+        studentId = student.id;
+      } else {
+        studentId = user.id; // Fallback to user ID
+      }
+    } else {
+      studentId = user.id; // Fallback for testing
+    }
+
+    console.log('Fetching quiz history for studentId:', studentId);
+
+    // Get quiz history with quiz details
+    const quizHistory = await query(`
+      SELECT 
+        qa.id,
+        qa.score,
+        qa.total_marks,
+        qa.submitted_at,
+        COALESCE(q.title, 'Sample Quiz') as quiz_name,
+        COALESCE(q.subject, 'General') as subject,
+        COALESCE(q.difficulty, 'Medium') as difficulty
+      FROM quiz_attempts qa
+      LEFT JOIN quizzes q ON qa.quiz_id = q.id
+      WHERE qa.student_id = ?
+      ORDER BY qa.submitted_at DESC
+      LIMIT 20
+    `, [studentId]);
+
+    console.log('Found quiz history:', quizHistory?.length || 0, 'records');
+    res.json(quizHistory || []);
+
+  } catch (error) {
+    console.error('Error fetching quiz history:', error);
+    res.status(500).json({ error: 'Server error: ' + error.message });
+  }
+});
 
 // Get quizzes for student's class
 router.get('/quizzes', async (req, res) => {

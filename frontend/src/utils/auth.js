@@ -70,7 +70,7 @@ export const authenticatedFetch = async (url, options = {}) => {
 // Verify token with backend
 export const verifyToken = async () => {
   try {
-    const response = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/auth/verify');
+    const response = await authenticatedFetch('http://localhost:5050/api/auth/verify');
     if (response.ok) {
       const data = await response.json();
       return data.user;
@@ -85,7 +85,7 @@ export const verifyToken = async () => {
 // Login function
 export const login = async (username, password) => {
   try {
-    const response = await fetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/auth/login', {
+    const response = await fetch('http://localhost:5050/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -108,10 +108,36 @@ export const login = async (username, password) => {
   }
 };
 
+// Register function for students
+export const register = async (userData) => {
+  try {
+    const response = await fetch('http://localhost:5050/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      setAuthToken(data.token);
+      setUserData(data.user);
+      return { success: true, user: data.user };
+    } else {
+      return { success: false, error: data.error || 'Registration failed' };
+    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    return { success: false, error: 'Network error' };
+  }
+};
+
 // Logout function
 export const logout = async () => {
   try {
-    await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/auth/logout', {
+    await authenticatedFetch('http://localhost:5050/api/auth/logout', {
       method: 'POST',
     });
   } catch (error) {

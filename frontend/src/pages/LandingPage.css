@@ -1,6 +1,58 @@
 /* Landing Page - Dark Theme Styles */
 
 /* CSS Variables for Dark Theme */
+:root[data-theme="dark"] {
+  --primary-dark: #0f1419;
+  --secondary-dark: #1a1f2e;
+  --accent-dark: #2d3748;
+  --text-primary: #ffffff;
+  --text-secondary: #a0aec0;
+  --text-muted: #718096;
+  --accent-blue: #3182ce;
+  --accent-purple: #805ad5;
+  --accent-green: #38a169;
+  --accent-orange: #dd6b20;
+  --accent-gold: #d69e2e;
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-secondary: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --shadow-light: 0 4px 20px rgba(255, 255, 255, 0.05);
+  --shadow-medium: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-heavy: 0 20px 60px rgba(0, 0, 0, 0.4);
+  --border-radius: 12px;
+  --border-radius-lg: 20px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --nav-background: rgba(15, 20, 25, 0.95);
+  --card-background: rgba(26, 31, 46, 0.8);
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* CSS Variables for Light Theme */
+:root[data-theme="light"] {
+  --primary-dark: #ffffff;
+  --secondary-dark: #f7fafc;
+  --accent-dark: #edf2f7;
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --accent-blue: #3182ce;
+  --accent-purple: #805ad5;
+  --accent-green: #38a169;
+  --accent-orange: #dd6b20;
+  --accent-gold: #d69e2e;
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-secondary: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --shadow-light: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-medium: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-heavy: 0 20px 60px rgba(0, 0, 0, 0.15);
+  --border-radius: 12px;
+  --border-radius-lg: 20px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --nav-background: rgba(255, 255, 255, 0.95);
+  --card-background: rgba(255, 255, 255, 0.8);
+  --border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Default to dark theme */
 :root {
   --primary-dark: #0f1419;
   --secondary-dark: #1a1f2e;
@@ -21,6 +73,9 @@
   --border-radius: 12px;
   --border-radius-lg: 20px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --nav-background: rgba(15, 20, 25, 0.95);
+  --card-background: rgba(26, 31, 46, 0.8);
+  --border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Base Styles */
@@ -44,9 +99,9 @@ body {
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(15, 20, 25, 0.95);
+  background: var(--nav-background);
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
   padding: 1rem 0;
   transition: var(--transition);
 }
@@ -119,6 +174,77 @@ body {
 .nav-cta:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-medium);
+}
+
+/* Theme and Language Controls */
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+  margin-right: 1rem;
+}
+
+.theme-toggle {
+  background: var(--accent-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 50px;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+}
+
+.theme-toggle:hover {
+  background: var(--accent-blue);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-light);
+}
+
+.language-dropdown {
+  position: relative;
+}
+
+.language-select {
+  background: var(--accent-dark);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 0.5rem 2.5rem 0.5rem 1rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-width: 80px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 1rem;
+}
+
+.language-select:hover {
+  background-color: var(--accent-blue);
+  border-color: var(--accent-blue);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-light);
+}
+
+.language-select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.language-select option {
+  background: var(--secondary-dark);
+  color: var(--text-primary);
+  padding: 0.5rem;
 }
 
 /* Mobile Navigation */
@@ -463,7 +589,7 @@ body {
 
 /* Featured Teachers Section */
 .teachers-section {
-  padding: 6rem 0;
+  padding: 4rem 0 6rem;
   background: var(--primary-dark);
   position: relative;
 }
@@ -1114,4 +1240,47 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Responsive Styles for Theme and Language Controls */
+@media (max-width: 768px) {
+  .nav-controls {
+    flex-direction: row;
+    gap: 0.75rem;
+    margin: 0;
+    justify-content: center;
+  }
+  
+  .theme-toggle {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .language-select {
+    min-width: 70px;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .nav-menu.active .nav-controls {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+  }
+}
+
+/* Very small mobile devices */
+@media (max-width: 480px) {
+  .nav-controls {
+    gap: 0.5rem;
+  }
+  
+  .theme-toggle {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .language-select {
+    min-width: 65px;
+    font-size: 0.75rem;
+  }
 }

@@ -4,56 +4,44 @@ import {
   Typography,
   Button,
   Grid,
-  Card,
-  CardContent,
   Avatar,
   Paper,
   IconButton,
   useMediaQuery,
   useTheme,
-  Slide,
   Fade,
   Grow,
-  Box,
-  Chip
+  Box
 } from '@mui/material';
 import {
   School,
-  Quiz,
-  Analytics,
   CheckCircle,
   RocketLaunch,
   Menu as MenuIcon,
   Close as CloseIcon,
-  Grade,
-  Subject,
   Science,
   Calculate,
   Language,
-  History,
-  Palette,
   Sports,
-  Computer,
-  Engineering,
-  Star,
-  Person,
-  LocationOn,
-  Phone,
-  Email,
-  AccessTime,
-  AttachMoney,
-  Verified
+  LightMode,
+  DarkMode
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useThemeLanguage } from '../contexts/ThemeLanguageContext';
+import TeacherCarousel from '../components/TeacherCarousel';
+import UserProfileDropdown from '../components/UserProfileDropdown';
 import './LandingPage.css';
 
-const LandingPage = () => {
+const LandingPage = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [animationTrigger, setAnimationTrigger] = useState(false);
+  
+  // Use theme and language context
+  const { language, toggleTheme, changeLanguage, t, isDark } = useThemeLanguage();
 
   // Handle scroll effect for navigation bar
   useEffect(() => {
@@ -81,88 +69,58 @@ const LandingPage = () => {
 
   // Navigation items
   const navItems = [
-    { label: 'Home', href: '#home', active: true },
-    { label: 'Grades', href: '#grades' },
-    { label: 'Subjects', href: '#subjects' },
-    { label: 'Past Papers', href: '#features' },
-    { label: 'About', href: '#about' },
-    { label: 'Contact', href: '#contact' }
+    { label: t('home'), href: '#home', active: true },
+    { label: t('grades'), href: '#grades' },
+    { label: t('subjects'), href: '#subjects' },
+    { label: t('pastPapers'), href: '#features' },
+    { label: t('about'), href: '#about' },
+    { label: t('contact'), href: '#contact' }
   ];
 
   // Educational categories with subjects
   const educationalCategories = [
     {
-      title: 'Grade 5 Scholarship',
+      title: t('grade5Scholarship'),
       icon: <Calculate />,
-      subjects: 'Mathematics, English, Environment, Buddhism',
+      subjects: `${t('mathematics')}, ${t('english')}, ${t('environment')}, ${t('buddhism')}`,
       gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       route: 'grade-5-scholarship'
     },
     {
-      title: 'GCE O/L',
+      title: t('gceOL'),
       icon: <Science />,
-      subjects: 'Mathematics, Science, English, Sinhala, History',
+      subjects: `${t('mathematics')}, ${t('science')}, ${t('english')}, ${t('sinhala')}, ${t('history')}`,
       gradient: 'linear-gradient(135deg, #38a169 0%, #4fd1c7 100%)',
       route: 'gce-ol'
     },
     {
-      title: 'GCE A/L',
+      title: t('gceAL'),
       icon: <Language />,
-      subjects: 'Mathematics, Physics, Chemistry, Biology, Commerce',
+      subjects: `${t('mathematics')}, ${t('physics')}, ${t('chemistry')}, ${t('biology')}, ${t('commerce')}`,
       gradient: 'linear-gradient(135deg, #dd6b20 0%, #f56500 100%)',
       route: 'gce-al'
-    },
-    // {
-    //   title: 'History & Social Studies',
-    //   icon: <History />,
-    //   subjects: 'World History, Geography, Civics, Economics',
-    //   gradient: 'linear-gradient(135deg, #805ad5 0%, #d53f8c 100%)'
-    // },
-    // {
-    //   title: 'Arts & Creative',
-    //   icon: <Palette />,
-    //   subjects: 'Visual Arts, Music, Drama, Creative Writing',
-    //   gradient: 'linear-gradient(135deg, #3182ce 0%, #63b3ed 100%)'
-    // },
-    // {
-    //   title: 'Technology',
-    //   icon: <Computer />,
-    //   subjects: 'Programming, Digital Literacy, Robotics',
-    //   gradient: 'linear-gradient(135deg, #d69e2e 0%, #f6e05e 100%)'
-    // },
-    // {
-    //   title: 'Physical Education',
-    //   icon: <Sports />,
-    //   subjects: 'Sports, Health, Fitness, Team Building',
-    //   gradient: 'linear-gradient(135deg, #38a169 0%, #68d391 100%)'
-    // },
-    // {
-    //   title: 'Engineering & STEM',
-    //   icon: <Engineering />,
-    //   subjects: 'Engineering Design, Applied Sciences, Innovation',
-    //   gradient: 'linear-gradient(135deg, #2d3748 0%, #4a5568 100%)'
-    // }
+    }
   ];
- // Educational categories with subjects
+ // Past paper categories with subjects
   const pastPaperCategories = [
     {
-      title: 'Grade 5 Scholarship',
+      title: t('grade5Scholarship'),
       icon: <Calculate />,
-      subjects: 'Mathematics, English, Environment, Buddhism',
+      subjects: `${t('mathematics')}, ${t('english')}, ${t('environment')}, ${t('buddhism')}`,
       gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       route: 'past-papers/grade-5-scholarship'
     },
     {
-      title: 'GCE O/L',
+      title: t('gceOL'),
       icon: <Science />,
-      subjects: 'Mathematics, Science, English, Sinhala, History',
+      subjects: `${t('mathematics')}, ${t('science')}, ${t('english')}, ${t('sinhala')}, ${t('history')}`,
       gradient: 'linear-gradient(135deg, #38a169 0%, #4fd1c7 100%)',
       route: 'past-papers/gce-ol'
     },
     {
-      title: 'GCE A/L',
+      title: t('gceAL'),
       icon: <Language />,
-      subjects: 'Mathematics, Physics, Chemistry, Biology, Commerce',
+      subjects: `${t('mathematics')}, ${t('physics')}, ${t('chemistry')}, ${t('biology')}, ${t('commerce')}`,
       gradient: 'linear-gradient(135deg, #dd6b20 0%, #f56500 100%)',
       route: 'past-papers/gce-al'
     },
@@ -284,13 +242,45 @@ const LandingPage = () => {
                   ))}
                 </ul>
               </nav>
-              <Button 
-                className="nav-cta"
-                onClick={handleLogin}
-                disableRipple
-              >
-                Get Started
-              </Button>
+              
+              {/* Theme and Language Controls */}
+              <div className="nav-controls">
+                {/* Language Dropdown */}
+                <div className="language-dropdown">
+                  <select 
+                    className="language-select"
+                    value={language}
+                    onChange={(e) => changeLanguage(e.target.value)}
+                    aria-label={t('language')}
+                  >
+                    <option value="en">English</option>
+                    <option value="si">සිංහල</option>
+                  </select>
+                </div>
+                
+                {/* Theme Toggle */}
+                <button 
+                  className="theme-toggle"
+                  onClick={toggleTheme}
+                  aria-label={isDark ? t('lightMode') : t('darkMode')}
+                  title={isDark ? t('lightMode') : t('darkMode')}
+                >
+                  {isDark ? <LightMode /> : <DarkMode />}
+                </button>
+              </div>
+              
+              {/* Show User Profile or Login Button */}
+              {user ? (
+                <UserProfileDropdown user={user} onLogout={onLogout} />
+              ) : (
+                <Button 
+                  // className="nav-cta"
+                  // onClick={handleLogin}
+                  // disableRipple
+                >
+                  {/* {t('getStarted')} */}
+                </Button>
+              )}
             </>
           ) : (
             <IconButton
@@ -316,17 +306,49 @@ const LandingPage = () => {
                 {item.label}
               </a>
             ))}
-            <Button 
-              className="nav-cta"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                handleLogin();
-              }}
-              fullWidth
-              sx={{ mt: 2 }}
-            >
-              Get Started
-            </Button>
+            
+            {/* Mobile Theme and Language Controls */}
+            <div className="nav-controls" style={{ marginTop: '1rem', justifyContent: 'center' }}>
+              <div className="language-dropdown">
+                <select 
+                  className="language-select"
+                  value={language}
+                  onChange={(e) => changeLanguage(e.target.value)}
+                  aria-label={t('language')}
+                >
+                  <option value="en">English</option>
+                  <option value="si">සිංහල</option>
+                </select>
+              </div>
+              
+              <button 
+                className="theme-toggle"
+                onClick={toggleTheme}
+                aria-label={isDark ? t('lightMode') : t('darkMode')}
+                title={isDark ? t('lightMode') : t('darkMode')}
+              >
+                {isDark ? <LightMode /> : <DarkMode />}
+              </button>
+            </div>
+            
+            {/* Show User Profile or Login Button in Mobile */}
+            {user ? (
+              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                <UserProfileDropdown user={user} onLogout={onLogout} />
+              </Box>
+            ) : (
+              <Button 
+                className="nav-cta"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogin();
+                }}
+                fullWidth
+                sx={{ mt: 2 }}
+              >
+                {t('getStarted')}
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -341,15 +363,15 @@ const LandingPage = () => {
               </Avatar>
               
               <Typography variant="h1" className="hero-title">
-                Welcome to <span className="hero-brand-text">S3Learn</span>
+                {t('welcomeTo')} <span className="hero-brand-text">S3Learn</span>
               </Typography>
               
               <Typography variant="h4" className="hero-subtitle">
-                Empowering Education Through Technology
+                {t('empoweringEducation')}
               </Typography>
               
               <Typography variant="h4" className="hero-brand-text">
-                Study-Solve-Succeed
+                {t('studySolveSucceed')}
               </Typography>
               
               <div className="hero-buttons">
@@ -359,14 +381,14 @@ const LandingPage = () => {
                   size="large"
                   startIcon={<RocketLaunch />}
                 >
-                  Start Learning
+                  {t('startLearning')}
                 </Button>
                 <Button
                   className="learn-more-btn"
                   size="large"
                   startIcon={<School />}
                 >
-                  Learn More
+                  {t('learnMore')}
                 </Button>
               </div>
             </div>
@@ -474,122 +496,27 @@ const LandingPage = () => {
       <section className="teachers-section">
         <Container maxWidth="lg" className="container-padding">
           <Typography variant="h2" className="section-title fade-in-up">
-            Featured Teachers
+            {t('featuredTeachers')}
           </Typography>
           
-          <Typography variant="body1" className="section-description">
-            Connect with experienced and qualified teachers for personalized learning
+          {/* <Typography variant="body1" className="section-description">
+            {t('teachersDescription')}
           </Typography>
-          
-          <Grid container spacing={4}>
-            {featuredTeachers.map((teacher, index) => (
-              <Grid item xs={12} sm={6} md={3} key={teacher.id}>
-                <Grow in={animationTrigger} timeout={800 + index * 100}>
-                  <Card className="teacher-card">
-                    <CardContent className="teacher-content">
-                      {/* Teacher Avatar and Verification */}
-                      <Box className="teacher-header">
-                        <Avatar 
-                          className="teacher-avatar"
-                          sx={{ background: teacher.gradient }}
-                        >
-                          <Person sx={{ fontSize: '2rem', color: 'white' }} />
-                        </Avatar>
-                        {teacher.verified && (
-                          <Verified className="verification-badge" />
-                        )}
-                      </Box>
-                      
-                      {/* Teacher Info */}
-                      <Typography variant="h6" className="teacher-name">
-                        {teacher.name}
-                      </Typography>
-                      
-                      <Typography variant="body2" className="teacher-subject">
-                        {teacher.subject} Teacher
-                      </Typography>
-                      
-                      {/* Rating */}
-                      <Box className="rating-section">
-                        <Box className="stars">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              className={`star ${i < Math.floor(teacher.rating) ? 'filled' : ''}`}
-                            />
-                          ))}
-                        </Box>
-                        <Typography variant="body2" className="rating-text">
-                          {teacher.rating} ({teacher.reviews} reviews)
-                        </Typography>
-                      </Box>
-                      
-                      {/* Experience and Location */}
-                      <Box className="teacher-details">
-                        <Box className="detail-item">
-                          <AccessTime className="detail-icon" />
-                          <Typography variant="body2">{teacher.experience}</Typography>
-                        </Box>
-                        <Box className="detail-item">
-                          <LocationOn className="detail-icon" />
-                          <Typography variant="body2">{teacher.location}</Typography>
-                        </Box>
-                      </Box>
-                      
-                      {/* Specialties */}
-                      <Box className="specialties">
-                        {teacher.specialties.slice(0, 2).map((specialty, idx) => (
-                          <Chip 
-                            key={idx}
-                            label={specialty}
-                            size="small"
-                            className="specialty-chip"
-                          />
-                        ))}
-                      </Box>
-                      
-                      {/* Price */}
-                      <Typography variant="h6" className="teacher-price">
-                        {teacher.price}
-                      </Typography>
-                      
-                      {/* Action Buttons */}
-                      <Box className="teacher-actions">
-                        <Button 
-                          variant="contained" 
-                          size="small"
-                          className="contact-btn"
-                          startIcon={<Phone />}
-                          onClick={() => window.open(`tel:${teacher.contact.phone}`)}
-                        >
-                          Call
-                        </Button>
-                        <Button 
-                          variant="outlined" 
-                          size="small"
-                          className="email-btn"
-                          startIcon={<Email />}
-                          onClick={() => window.open(`mailto:${teacher.contact.email}`)}
-                        >
-                          Email
-                        </Button>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grow>
-              </Grid>
-            ))}
-          </Grid>
+           */}
+          <TeacherCarousel 
+            teachers={featuredTeachers} 
+            animationTrigger={animationTrigger}
+          />
           
           {/* View All Teachers Button */}
-          <Box textAlign="center" mt={4}>
+          <Box textAlign="center" mt={6}>
             <Button
               variant="contained"
               size="large"
               className="view-all-teachers-btn"
               onClick={() => navigate('/teachers')}
             >
-              View All Teachers
+              {t('viewAllTeachers')}
             </Button>
           </Box>
         </Container>
@@ -599,11 +526,11 @@ const LandingPage = () => {
       <section id="subjects" className="categories-section">
         <Container maxWidth="lg" className="container-padding">
           <Typography variant="h2" className="section-title fade-in-up">
-            Explore Our Academic Categories
+            {t('exploreCategories')}
           </Typography>
           
           <Typography variant="body1" className="section-description">
-            Comprehensive curriculum coverage across all major academic disciplines
+            {t('categoriesDescription')}
           </Typography>
           
           <div className="categories-grid">
@@ -642,11 +569,11 @@ const LandingPage = () => {
       <section id="features" className="categories-section">
         <Container maxWidth="lg" className="container-padding">
           <Typography variant="h2" className="section-title fade-in-up">
-            Past Papers
+            {t('pastPapersSection')}
           </Typography>
           
           <Typography variant="body1" className="section-description">
-            Comprehensive curriculum coverage across all major academic disciplines
+            {t('categoriesDescription')}
           </Typography>
           
           <div className="categories-grid">
@@ -689,46 +616,45 @@ const LandingPage = () => {
             <Grid item xs={12} md={6}>
               <div className="fade-in-left">
                 <Typography variant="h2" className="benefits-title">
-                  Why Choose S3Learn?
+                  {t('whyChoose')}
                 </Typography>
                 
                 <Typography variant="body1" className="benefits-subtitle">
-                  Our platform is designed with educators and learners in mind, 
-                  providing the tools needed for academic success.
+                  {t('benefitsDescription')}
                 </Typography>
                 
                 <div className="benefit-item">
                   <CheckCircle className="benefit-icon" />
                   <Typography className="benefit-text">
-                    Personalized learning paths adapted to individual needs
+                    {t('personalizedLearning')}
                   </Typography>
                 </div>
                 
                 <div className="benefit-item">
                   <CheckCircle className="benefit-icon" />
                   <Typography className="benefit-text">
-                    Real-time progress tracking and detailed performance analytics
+                    {t('realTimeTracking')}
                   </Typography>
                 </div>
                 
                 <div className="benefit-item">
                   <CheckCircle className="benefit-icon" />
                   <Typography className="benefit-text">
-                    Collaborative learning environment for students and teachers
+                    {t('collaborativeLearning')}
                   </Typography>
                 </div>
                 
                 <div className="benefit-item">
                   <CheckCircle className="benefit-icon" />
                   <Typography className="benefit-text">
-                    Mobile-responsive design for learning anywhere, anytime
+                    {t('mobileResponsive')}
                   </Typography>
                 </div>
                 
                 <div className="benefit-item">
                   <CheckCircle className="benefit-icon" />
                   <Typography className="benefit-text">
-                    Comprehensive curriculum aligned with educational standards
+                    {t('comprehensiveCurriculum')}
                   </Typography>
                 </div>
               </div>
@@ -740,12 +666,11 @@ const LandingPage = () => {
                   <School className="cta-icon" />
                   
                   <Typography variant="h4" className="cta-title">
-                    Ready to Transform Learning?
+                    {t('readyToTransform')}
                   </Typography>
                   
                   <Typography variant="body1" className="cta-description">
-                    Join thousands of students and educators who are already 
-                    experiencing the future of education with S3Learn.
+                    {t('ctaDescription')}
                   </Typography>
                   
                   <Button
@@ -754,7 +679,7 @@ const LandingPage = () => {
                     size="large"
                     startIcon={<RocketLaunch />}
                   >
-                    Get Started Today
+                    {t('getStartedToday')}
                   </Button>
                 </Paper>
               </Grow>
@@ -772,7 +697,7 @@ const LandingPage = () => {
           </Typography>
           
           <Typography variant="body2" className="footer-text">
-            © 2024 S3Learn. Empowering minds, transforming futures through innovative education technology.
+            © 2024 S3Learn. {t('footerDescription')}
           </Typography>
         </Container>
       </footer>

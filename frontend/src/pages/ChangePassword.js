@@ -13,7 +13,7 @@ function ChangePassword({ user, onPasswordChanged }) {
     setLoading(true);
     
     try {
-      const res = await authenticatedFetch('https://s3-alb-1110116241.us-east-1.elb.amazonaws.com/api/auth/change-password', {
+      const res = await authenticatedFetch('http://localhost:5050/api/auth/change-password', {
         method: 'POST',
         body: JSON.stringify({ newPassword })
       });
