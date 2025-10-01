@@ -6,8 +6,8 @@ services:
     build: ./backend
     container_name: s3learn-backend
     restart: unless-stopped
-    ports:
-      - "${PORT}:${PORT}"
+    expose:
+      - "5050"
     environment:
       - DB_HOST=${DB_HOST}
       - DB_USER=${DB_USER}
@@ -33,19 +33,40 @@ services:
     build: ./frontend
     container_name: s3learn-frontend
     restart: unless-stopped
-    ports:
-      - "${FRONTEND_PORT}:80"
+    expose:
+      - "80"
     depends_on:
       - backend
     networks:
       - s3learn-network
-    # healthcheck:
-    #   test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
 
-# Custom network for service communication
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:latest
+    container_name: s3learn-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/certs:/etc/letsencrypt
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - s3learn-network
+
+  # Certbot for SSL
+  certbot:
+    image: certbot/certbot
+    container_name: s3learn-certbot
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/certs:/etc/letsencrypt
+    entrypoint: sh -c "sleep 6"
+
 networks:
   s3learn-network:
     driver: bridge
