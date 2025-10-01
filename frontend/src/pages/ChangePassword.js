@@ -13,7 +13,7 @@ function ChangePassword({ user, onPasswordChanged }) {
     setLoading(true);
     
     try {
-      const res = await authenticatedFetch('http://52.23.173.216:5050/api/auth/change-password', {
+      const res = await authenticatedFetch('https://52.23.173.216:5050/api/auth/change-password', {
         method: 'POST',
         body: JSON.stringify({ newPassword })
       });
