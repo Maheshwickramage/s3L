@@ -46,7 +46,7 @@ function StudentDashboard({ user, onLogout }) {
         console.log('Loading student analytics for user:', user);
         
         // Load student analytics
-        const analyticsRes = await authenticatedFetch('http://52.23.173.216:5050/api/student/analytics');
+        const analyticsRes = await authenticatedFetch('https://api.s3learn.com/api/student/analytics');
         console.log('Analytics response status:', analyticsRes.status);
         
         if (analyticsRes.ok) {
@@ -59,7 +59,7 @@ function StudentDashboard({ user, onLogout }) {
         }
 
         // Load quiz history
-        const historyRes = await authenticatedFetch('http://52.23.173.216:5050/api/student/quiz-history');
+        const historyRes = await authenticatedFetch('https://api.s3learn.com/api/student/quiz-history');
         console.log('Quiz history response status:', historyRes.status);
         
         if (historyRes.ok) {

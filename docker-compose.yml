@@ -7,7 +7,7 @@ services:
     container_name: s3learn-backend
     restart: unless-stopped
     ports:
-      - "${PORT}:${PORT}"
+      - "80:5050"
     environment:
       - DB_HOST=${DB_HOST}
       - DB_USER=${DB_USER}
