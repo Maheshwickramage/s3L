@@ -8,7 +8,9 @@ const { testConnection } = require('./config/database');
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
-app.use(cors()); // Enable CORS for https://api.s3learn.com/(cors());
+
+// Don't use CORS middleware - let Nginx handle CORS
+// app.use(cors()); 
 app.use(express.json());
 
 // Test MySQL database connection
