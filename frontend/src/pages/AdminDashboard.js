@@ -10,14 +10,14 @@ function AdminDashboard() {
   const [email, setEmail] = useState('');
 
   useEffect(() => {
-    fetch('https://52.23.173.216:5050/api/admin/teachers')
+    fetch('http://52.23.173.216:5050/api/admin/teachers')
       .then(res => res.json())
       .then(data => setTeachers(data));
   }, []);
 
   const handleAddTeacher = async (e) => {
     e.preventDefault();
-    const res = await fetch('https://52.23.173.216:5050/api/admin/teachers', {
+    const res = await fetch('http://52.23.173.216:5050/api/admin/teachers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email })
