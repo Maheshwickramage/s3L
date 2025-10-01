@@ -39,22 +39,39 @@ check_docker() {
 
 # Build frontend
 build_frontend() {
-    log "Building React frontend..."
+    log "Building React frontend with Docker..."
     
-    cd frontend
-    
-    # Install dependencies if node_modules doesn't exist
-    if [ ! -d "node_modules" ]; then
-        log "Installing frontend dependencies..."
-        npm install
+    # Check if we should force rebuild
+    if [ "$1" = "force" ] || [ ! -d "frontend/build" ]; then
+        log "Building frontend using Docker container..."
+        
+        # Remove existing build if forcing rebuild
+        if [ "$1" = "force" ] && [ -d "frontend/build" ]; then
+            log "Removing existing build directory..."
+            rm -rf frontend/build
+        fi
+        
+        # Build frontend using Docker
+        log "Running npm install and build in Docker container..."
+        docker run --rm \
+            -v "$(pwd)/frontend:/app" \
+            -w /app \
+            node:18-alpine \
+            sh -c "npm ci --only=production && npm run build"
+        
+        if [ ! -d "frontend/build" ]; then
+            error "Frontend build failed - build directory not created"
+        fi
+        
+        # Check if build contains index.html
+        if [ ! -f "frontend/build/index.html" ]; then
+            error "Frontend build incomplete - index.html not found"
+        fi
+        
+        success "Frontend build completed successfully"
+    else
+        log "Frontend build directory already exists, skipping build (use 'force' to rebuild)"
     fi
-    
-    # Build the React app
-    log "Building React app for production..."
-    npm run build
-    
-    cd ..
-    success "Frontend build completed"
 }
 
 # Start services
@@ -129,7 +146,7 @@ main() {
     log "Starting S3Learn deployment with Nginx reverse proxy..."
     
     check_docker
-    build_frontend
+    build_frontend "$1"
     start_services
     check_health
     show_info
@@ -142,8 +159,14 @@ case "${1:-deploy}" in
     "deploy")
         main
         ;;
+    "deploy-force")
+        main "force"
+        ;;
     "build")
         build_frontend
+        ;;
+    "build-force")
+        build_frontend "force"
         ;;
     "start")
         start_services
@@ -158,17 +181,32 @@ case "${1:-deploy}" in
     "status")
         docker-compose ps
         ;;
+    "clean")
+        log "Cleaning up build files and containers..."
+        docker-compose down
+        rm -rf frontend/build
+        docker system prune -f
+        success "Cleanup completed"
+        ;;
     "help"|"-h"|"--help")
         echo "Usage: $0 [command]"
         echo ""
         echo "Commands:"
-        echo "  deploy    - Full deployment (default)"
-        echo "  build     - Build frontend only"
-        echo "  start     - Start services only"
-        echo "  stop      - Stop all services"
-        echo "  logs      - View service logs"
-        echo "  status    - Show service status"
-        echo "  help      - Show this help"
+        echo "  deploy        - Full deployment (default)"
+        echo "  deploy-force  - Full deployment with frontend rebuild"
+        echo "  build         - Build frontend only"
+        echo "  build-force   - Force rebuild frontend"
+        echo "  start         - Start services only"
+        echo "  stop          - Stop all services"
+        echo "  logs          - View service logs"
+        echo "  status        - Show service status"
+        echo "  clean         - Clean build files and containers"
+        echo "  help          - Show this help"
+        echo ""
+        echo "Examples:"
+        echo "  $0 deploy-force    # Force rebuild and deploy"
+        echo "  $0 build-force     # Force rebuild frontend only"
+        echo "  $0 clean           # Clean up everything"
         ;;
     *)
         error "Unknown command: $1. Use '$0 help' for available commands."
